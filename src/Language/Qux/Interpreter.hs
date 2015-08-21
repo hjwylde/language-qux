@@ -1,8 +1,33 @@
 
+{-|
+Module      : Language.Qux.Interpreter
+Description : Functions for executing a program and retrieving the return result.
+
+Copyright   : (c) Henry J. Wylde, 2015
+License     : BSD3
+Maintainer  : public@hjwylde.com
+
+Functions for executing a program and retrieving the return result.
+
+This module assumes the program is well-formed.
+That is, it must be well-typed (see "Language.Qux.TypeChecker").
+-}
+
 module Language.Qux.Interpreter (
-    Env,
+    -- * Environment
+    Env, BreakingEnv,
     buildEnv,
-    executeMain, executeFunction
+
+    -- * Execution
+
+    -- ** Program execution
+    execute,
+
+    -- ** Other node execution
+    executeFunction, executeStmt,
+
+    -- ** Expression reducing
+    reduceExpr
 ) where
 
 import Control.Monad.State
@@ -16,14 +41,27 @@ import Data.Maybe
 import Language.Qux.Ast
 import Language.Qux.Util
 
+
+-- |    An environment that holds the current state of identifiers to declarations.
+--      An identifier is a function name.
 type Env = State (Map Id Decl)
 
+-- | Builds an initial environment from a program's declarations.
 buildEnv :: Program -> Map Id Decl
 buildEnv (Program decls) = Map.fromList $ map (\d@(FunctionDecl name _ _) -> (name, d)) decls
 
-executeMain :: Env Value
-executeMain = executeFunction "main" []
+-- | An 'EitherT' that enables breaking execution (e.g., due to return statements).
+type BreakingEnv = EitherT Value Env
 
+
+-- |    @execute program entry arguments@ executes @entry@ (passing it @arguments@) in the context
+--      of @program@.
+--      This function wraps 'executeFunction' by building and evaluating the 'Env' under the
+--      hood.
+execute :: Program -> Id -> [Value] -> Value
+execute program entry arguments = evalState (executeFunction entry arguments) (buildEnv program)
+
+-- | Executes the function with the given arguments, returning the result.
 executeFunction :: Id -> [Value] -> Env Value
 executeFunction name arguments = do
     maybeDecl <- Map.lookup name <$> get
@@ -32,28 +70,28 @@ executeFunction name arguments = do
             (\(p, a) -> (p, FunctionDecl p [] [ReturnStmt $ ValueExpr a]))
             (zip (delete "@" $ map snd parameters) arguments)
 
-    either id undefined <$> (runStateWith (runEitherT $ executeBlock stmts) $ Map.union parametersMap)
-
-type BreakingEnv = EitherT Value Env
+    either id undefined <$> (
+        runStateWith (runEitherT $ executeBlock stmts) (Map.union parametersMap)
+        )
 
 executeBlock :: [Stmt] -> BreakingEnv ()
 executeBlock = mapM_ executeStmt
 
+-- | Executes the statement in a breaking environment.
 executeStmt :: Stmt -> BreakingEnv ()
 executeStmt (IfStmt condition trueStmts falseStmts) = do
     result <- lift $ reduceExpr condition
 
     executeBlock $ case bool result of
-        True -> trueStmts
-        False -> falseStmts
+        True    -> trueStmts
+        False   -> falseStmts
 executeStmt (ReturnStmt expr)                       = lift (reduceExpr expr) >>= left
 executeStmt s@(WhileStmt condition stmts)           = do
     result <- lift $ reduceExpr condition
 
-    case bool result of
-        True -> executeBlock stmts >> executeStmt s
-        False -> return ()
+    when (bool result) $ executeBlock stmts >> executeStmt s
 
+-- | Reduces the expression to a value (normal form).
 reduceExpr :: Expr -> Env Value
 reduceExpr (ApplicationExpr name arguments) = mapM reduceExpr arguments >>= executeFunction name
 reduceExpr (InfixExpr op lhs rhs)           = do
@@ -63,6 +101,7 @@ reduceExpr (InfixExpr op lhs rhs)           = do
     reduceInfixExpr op lhs' rhs'
 reduceExpr (ListExpr exprs)                 = ListValue <$> mapM reduceExpr exprs
 reduceExpr (ValueExpr value)                = return value
+
 
 reduceInfixExpr :: InfixOp -> Value -> Value -> Env Value
 reduceInfixExpr Add (IntValue lhs)  (IntValue rhs)  = return $ IntValue (lhs + rhs)

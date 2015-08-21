@@ -1,5 +1,23 @@
 
-module Language.Qux.Parser where
+{-|
+Module      : Language.Qux.Parser
+Description : A Parsec indentation-based parser for generating a program.
+
+Copyright   : (c) Henry J. Wylde, 2015
+License     : BSD3
+Maintainer  : public@hjwylde.com
+
+A "Text.Parsec" indentation-based parser for generating a 'Program'.
+-}
+
+module Language.Qux.Parser (
+    -- * Parsing
+    Parser, ParseError,
+    parse,
+
+    -- ** Parsers
+    program, decl, stmt, expr, value, type_
+) where
 
 import Control.Applicative
 import Control.Monad.State
@@ -7,17 +25,23 @@ import Control.Monad.State
 import Language.Qux.Ast
 import Language.Qux.Lexer
 
-import Text.Parsec hiding (State, (<|>), many)
+import Text.Parsec hiding (State, (<|>), many, parse)
 import Text.Parsec.Expr
-import Text.Parsec.Indent hiding (IndentParser)
+import Text.Parsec.Indent
 
 
-type IndentParser a = ParsecT String () (State SourcePos) a
+-- | A 'ParsecT' that retains indentation information.
+type Parser a = ParsecT String () (State SourcePos) a
 
-indentParse :: IndentParser a -> SourceName -> String -> Either ParseError a
-indentParse parser sourceName input = runIndent sourceName $ runParserT parser () sourceName input
+-- |    @parse parser sourceName input@ parses @input@ using @parser@.
+--      Returns either a 'ParseError' or @a@.
+--      This method wraps 'runParserT' by running the indentation resolver over the parser's state.
+parse :: Parser a -> SourceName -> String -> Either ParseError a
+parse parser sourceName input = runIndent sourceName $ runParserT parser () sourceName input
 
-program :: IndentParser Program
+
+-- | 'Program' parser.
+program :: Parser Program
 program = do
     whiteSpace
     checkIndent
@@ -25,7 +49,8 @@ program = do
     eof
     return $ Program decls
 
-decl :: IndentParser Decl
+-- | 'Decl' parser.
+decl :: Parser Decl
 decl = do
     name <- identifier
     symbol "::"
@@ -37,7 +62,8 @@ decl = do
     return $ FunctionDecl name (parameters ++ [(returnType, "@")]) stmts
     <?> "function declaration"
 
-stmt :: IndentParser Stmt
+-- | 'Stmt' parser.
+stmt :: Parser Stmt
 stmt = choice [
     ifStmt,
     ReturnStmt <$> (reserved "return" *> expr),
@@ -53,7 +79,8 @@ stmt = choice [
             falseStmts <- option [] (checkIndent >> withBlock' (do { reserved "else"; colon }) stmt)
             return $ IfStmt condition trueStmts falseStmts
 
-expr :: IndentParser Expr
+-- | 'Expr' parser.
+expr :: Parser Expr
 expr = buildExpressionParser table (try application <|> term) <?> "expression"
 
 table :: OperatorTable String () (State SourcePos) Expr
@@ -78,10 +105,10 @@ table = [
     ]
     ]
 
-application :: IndentParser Expr
+application :: Parser Expr
 application = ApplicationExpr <$> identifier <*> many (sameOrIndented >> term)
 
-term :: IndentParser Expr
+term :: Parser Expr
 term = choice [
     flip ApplicationExpr [] <$> identifier,
     ListExpr <$> brackets (expr `sepEndBy` comma),
@@ -89,7 +116,8 @@ term = choice [
     ValueExpr <$> value
     ] <?> "term"
 
-value :: IndentParser Value
+-- | 'Value' parser.
+value :: Parser Value
 value = choice [
     BoolValue False <$ reserved "false",
     BoolValue True <$ reserved "true",
@@ -97,7 +125,8 @@ value = choice [
     NilValue <$ reserved "nil"
     ] <?> "value"
 
-type_ :: IndentParser Type
+-- | 'Type' parser.
+type_ :: Parser Type
 type_ = choice [
     BoolType <$ reserved "Bool",
     IntType <$ reserved "Int",

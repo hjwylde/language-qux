@@ -1,7 +1,31 @@
 
+{-|
+Module      : Language.Qux.TypeChecker
+Description : Type checking functions to verify that a 'Program' is type-safe.
+
+Copyright   : (c) Henry J. Wylde, 2015
+License     : BSD3
+Maintainer  : public@hjwylde.com
+
+Type checking functions to verify that a 'Program' is type-safe.
+
+These functions only verify that types are used correctly.
+They don't verify other properties such as definite assignment.
+-}
+
 module Language.Qux.TypeChecker (
-    Env, Check,
-    check
+    -- * Environment
+    Env,
+    buildEnv,
+
+    -- * Type checking
+    Check,
+
+    -- ** Program checking
+    check,
+
+    -- ** Other node checking
+    checkProgram, checkDecl, checkStmt, checkExpr, checkValue
 ) where
 
 import Control.Applicative
@@ -20,17 +44,33 @@ import Language.Qux.Exception
 import Language.Qux.Util
 
 
+-- |    An environment that holds the current state of identifiers to types.
+--      An identifier is a function name and the types are it's arguments and return type (in
+--      order).
 type Env = State (Map Id [Type])
 
+-- | Builds an initial environment from a program's declarations.
 buildEnv :: Program -> Map Id [Type]
-buildEnv (Program decls) = Map.fromList $ map (\(FunctionDecl name parameters _) -> (name, map fst parameters)) decls
+buildEnv (Program decls) = foldl Map.union Map.empty (map buildEnv' decls)
+
+buildEnv' :: Decl -> Map Id [Type]
+buildEnv' (FunctionDecl name parameters _) = Map.singleton name (map fst parameters)
 
 
+-- |    Either a 'TypeException' or an @a@.
+--      Contains an underlying 'Env' in the monad transformer.
 type Check = ExceptT TypeException Env
 
-check :: Program -> Maybe TypeException
-check program = either Just (const Nothing) $ evalState (runExceptT $ checkProgram program) (buildEnv program)
 
+-- |    Type checks the program.
+--      If an exception occurs then the result will be a 'TypeException', otherwise 'Nothing'.
+--      This function wraps 'checkProgram' by building and evaluating the 'Env' under the hood.
+check :: Program -> Maybe TypeException
+check program = either Just (const Nothing) $
+    evalState (runExceptT $ checkProgram program) (buildEnv program)
+
+
+-- | Type checks a program.
 checkProgram :: Program -> Check ()
 checkProgram (Program decls)
     | null duplicateNames   = mapM_ checkDecl decls
@@ -39,6 +79,7 @@ checkProgram (Program decls)
         functionNames   = map (\(FunctionDecl name _ _) -> name) decls
         duplicateNames  = functionNames \\ nub functionNames
 
+-- | Type checks a declaration.
 checkDecl :: Decl -> Check ()
 checkDecl (FunctionDecl _ parameters stmts)
     | null duplicateNames   = ExceptT $ runStateWith (runExceptT $ checkBlock stmts) $ Map.union (Map.fromList $ map (mapSnd (:[])) (map swap parameters))
@@ -51,6 +92,7 @@ checkDecl (FunctionDecl _ parameters stmts)
 checkBlock :: [Stmt] -> Check ()
 checkBlock = mapM_ checkStmt
 
+-- | Type checks a statement.
 checkStmt :: Stmt -> Check ()
 checkStmt (IfStmt condition trueStmts falseStmts)   = do
     expectExpr condition [BoolType]
@@ -66,6 +108,7 @@ checkStmt (WhileStmt condition stmts)               = do
 
     checkBlock stmts
 
+-- | Type checks an expression.
 checkExpr :: Expr -> Check Type
 checkExpr (ApplicationExpr name arguments)  = do
     env <- get
@@ -84,6 +127,7 @@ checkExpr (InfixExpr op lhs rhs)
 checkExpr (ListExpr elements)               = mapM checkExpr elements >>= checkElementTypes
 checkExpr (ValueExpr value)                 = checkValue value
 
+-- | Type checks a value.
 checkValue :: Value -> Check Type
 checkValue (BoolValue _)        = return BoolType
 checkValue (IntValue _)         = return IntType
