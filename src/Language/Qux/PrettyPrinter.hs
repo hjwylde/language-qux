@@ -14,7 +14,7 @@ To render a program, call: @render $ programDoc program@
 
 module Language.Qux.PrettyPrinter (
     -- * Rendering
-    render,
+    render, renderOneLine,
 
     -- * Document functions
     programDoc, declDoc, stmtDoc, exprDoc, binaryOpDoc, valueDoc, typeDoc
@@ -26,6 +26,11 @@ import Data.List
 import Language.Qux.Ast
 
 import Text.PrettyPrint
+
+
+-- | Renders the 'Doc' to a 'String' on one line.
+renderOneLine :: Doc -> String
+renderOneLine = renderStyle (style { mode = OneLineMode })
 
 
 -- | 'Program' document.

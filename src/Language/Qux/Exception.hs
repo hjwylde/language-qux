@@ -58,9 +58,9 @@ invalidArgumentsCount expected received = TypeException $ intercalate " " [
 mismatchedType :: [Type] -> Type -> TypeException
 mismatchedType expects received = TypeException $ intercalate " " [
     "unexpected type",
-    render $ quotes (typeDoc received),
+    renderOneLine $ quotes (typeDoc received),
     "\nexpecting",
-    sentence "or" (map (render . typeDoc) expects)
+    sentence "or" (map (renderOneLine . typeDoc) expects)
     ]
 
 sentence :: String -> [String] -> String
