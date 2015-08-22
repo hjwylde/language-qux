@@ -18,7 +18,7 @@ module Language.Qux.Lexer (
     identifier, natural, operator, reserved, symbol, whiteSpace,
 
     -- ** Symbols
-    brackets, colon, comma, parens, rightArrow
+    brackets, colon, comma, parens, pipes, rightArrow
 ) where
 
 import Control.Monad.State
@@ -34,39 +34,42 @@ import qualified Text.Parsec.Token as Token
 lexer = Token.makeTokenParser quxDef
 
 
--- | Lexumes an identifier matching @[a-zA-Z_][a-zA-Z_']*@.
+-- | Lexemes an identifier matching @[a-zA-Z_][a-zA-Z_']*@.
 identifier = Token.identifier lexer
 
--- | Lexumes a natural number (decimal, octal or hex).
+-- | Lexemes a natural number (decimal, octal or hex).
 natural = Token.natural lexer
 
--- | Lexumes a reserved operator from 'operators'.
+-- | Lexemes a reserved operator from 'operators'.
 operator = Token.reservedOp lexer
 
--- | Lexumes a reserved keyword from 'keywords'.
+-- | Lexemes a reserved keyword from 'keywords'.
 reserved = Token.reserved lexer
 
--- | Lexumes a symbol.
+-- | Lexemes a symbol.
 symbol = Token.symbol lexer
 
--- |    Lexumes white space.
+-- |    Lexemes white space.
 --      White space includes comments.
 whiteSpace = Token.whiteSpace lexer
 
 
--- | @brackets p@ lexumes @p@ surrounded by @[..]@.
+-- | @brackets p@ lexemes @p@ surrounded by @[..]@.
 brackets = Token.brackets lexer
 
--- | Lexumes a colon, @:@.
+-- | Lexemes a colon, @:@.
 colon = Token.colon lexer
 
--- | Lexumes a comma, @,@.
+-- | Lexemes a comma, @,@.
 comma = Token.comma lexer
 
--- | @parens p@ lexumes @p@ surrounded by @(..)@.
+-- | @parens p@ lexemes @p@ surrounded by @(..)@.
 parens = Token.parens lexer
 
--- | Lexumes a right arrow, @->@.
+-- | @pipes p@ lexemes @p@ surrounded by @|..|@.
+pipes p = Token.lexeme lexer $ between (symbol "|") (symbol "|") p
+
+-- | Lexemes a right arrow, @->@.
 rightArrow = symbol "->"
 
 
@@ -111,7 +114,7 @@ keywords = [
     ]
 
 operators = [
-    "!!",
+    "!!", "|",
     "*", "/", "%",
     "+", "-",
     "<", "<=", ">", ">=",

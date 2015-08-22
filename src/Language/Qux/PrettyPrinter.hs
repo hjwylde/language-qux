@@ -63,6 +63,7 @@ exprDoc (ApplicationExpr name arguments)    = text name <+> fsep (map exprDoc ar
 -- TODO (hjw): don't use so many parenthesis
 exprDoc (BinaryExpr op lhs rhs)             = parens $ fsep [exprDoc lhs, binaryOpDoc op, exprDoc rhs]
 exprDoc (ListExpr elements)                 = brackets $ fsep (punctuate comma (map exprDoc elements))
+exprDoc (UnaryExpr Len expr)                = pipes $ exprDoc expr
 exprDoc (ValueExpr value)                   = valueDoc value
 
 -- | 'BinaryOp' document
@@ -99,4 +100,6 @@ block :: [Stmt] -> Doc
 block = vcat . (map stmtDoc)
 
 emptyLine = text ""
+
+pipes doc = char '|' <> doc <> char '|'
 

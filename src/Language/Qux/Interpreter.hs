@@ -100,6 +100,7 @@ reduceExpr (BinaryExpr op lhs rhs)          = do
 
     reduceBinaryExpr op lhs' rhs'
 reduceExpr (ListExpr exprs)                 = ListValue <$> mapM reduceExpr exprs
+reduceExpr (UnaryExpr op expr)              = reduceExpr expr >>= reduceUnaryExpr op
 reduceExpr (ValueExpr value)                = return value
 
 
@@ -122,6 +123,10 @@ reduceBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue
 reduceBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue True
 reduceBinaryExpr Eq  _               _                      = return $ BoolValue False
 reduceBinaryExpr Neq lhs             rhs                    = reduceBinaryExpr Eq lhs rhs >>= return . BoolValue . not . bool
+
+reduceUnaryExpr :: UnaryOp -> Value -> Env Value
+reduceUnaryExpr Len (ListValue elements) = return $ IntValue (toInteger $ length elements)
+
 
 bool :: Value -> Bool
 bool (BoolValue value) = value

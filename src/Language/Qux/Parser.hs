@@ -120,6 +120,7 @@ term = choice [
     flip ApplicationExpr [] <$> identifier,
     ListExpr <$> brackets (expr `sepEndBy` comma),
     parens expr,
+    (UnaryExpr Len) <$> pipes expr,
     ValueExpr <$> value
     ] <?> "term"
 
