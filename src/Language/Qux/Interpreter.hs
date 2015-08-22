@@ -94,34 +94,34 @@ executeStmt s@(WhileStmt condition stmts)           = do
 -- | Reduces the expression to a value (normal form).
 reduceExpr :: Expr -> Env Value
 reduceExpr (ApplicationExpr name arguments) = mapM reduceExpr arguments >>= executeFunction name
-reduceExpr (InfixExpr op lhs rhs)           = do
+reduceExpr (BinaryExpr op lhs rhs)          = do
     lhs' <- reduceExpr lhs
     rhs' <- reduceExpr rhs
 
-    reduceInfixExpr op lhs' rhs'
+    reduceBinaryExpr op lhs' rhs'
 reduceExpr (ListExpr exprs)                 = ListValue <$> mapM reduceExpr exprs
 reduceExpr (ValueExpr value)                = return value
 
 
-reduceInfixExpr :: InfixOp -> Value -> Value -> Env Value
-reduceInfixExpr Acc (ListValue elements) (IntValue rhs) = return $ elements !! (fromInteger rhs)
-reduceInfixExpr Mul (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs * rhs)
-reduceInfixExpr Div (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs `div` rhs)
-reduceInfixExpr Mod (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs `mod` rhs)
-reduceInfixExpr Add (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs + rhs)
-reduceInfixExpr Add (ListValue lhs) (ListValue rhs)     = return $ ListValue (lhs ++ rhs)
-reduceInfixExpr Sub (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs - rhs)
-reduceInfixExpr Sub (ListValue lhs) (ListValue rhs)     = return $ ListValue (lhs \\ rhs)
-reduceInfixExpr Lt  (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs < rhs)
-reduceInfixExpr Lte (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs <= rhs)
-reduceInfixExpr Gt  (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs > rhs)
-reduceInfixExpr Gte (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs >= rhs)
-reduceInfixExpr Eq  (BoolValue lhs) (BoolValue rhs)     = return $ BoolValue (lhs == rhs)
-reduceInfixExpr Eq  (IntValue lhs)  (IntValue rhs)      = return $ BoolValue (lhs == rhs)
-reduceInfixExpr Eq  (ListValue lhs) (ListValue rhs)     = return $ BoolValue (lhs == rhs)
-reduceInfixExpr Eq  NilValue        NilValue            = return $ BoolValue True
-reduceInfixExpr Eq  _               _                   = return $ BoolValue False
-reduceInfixExpr Neq lhs             rhs                 = reduceInfixExpr Eq lhs rhs >>= return . BoolValue . not . bool
+reduceBinaryExpr :: BinaryOp -> Value -> Value -> Env Value
+reduceBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)
+reduceBinaryExpr Mul (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs * rhs)
+reduceBinaryExpr Div (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `div` rhs)
+reduceBinaryExpr Mod (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `mod` rhs)
+reduceBinaryExpr Add (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs + rhs)
+reduceBinaryExpr Add (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs ++ rhs)
+reduceBinaryExpr Sub (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs - rhs)
+reduceBinaryExpr Sub (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs \\ rhs)
+reduceBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs < rhs)
+reduceBinaryExpr Lte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs <= rhs)
+reduceBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs > rhs)
+reduceBinaryExpr Gte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs >= rhs)
+reduceBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)        = return $ BoolValue (lhs == rhs)
+reduceBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs == rhs)
+reduceBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue (lhs == rhs)
+reduceBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue True
+reduceBinaryExpr Eq  _               _                      = return $ BoolValue False
+reduceBinaryExpr Neq lhs             rhs                    = reduceBinaryExpr Eq lhs rhs >>= return . BoolValue . not . bool
 
 bool :: Value -> Bool
 bool (BoolValue value) = value

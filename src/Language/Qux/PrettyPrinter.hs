@@ -17,7 +17,7 @@ module Language.Qux.PrettyPrinter (
     render,
 
     -- * Document functions
-    programDoc, declDoc, stmtDoc, exprDoc, infixOpDoc, valueDoc, typeDoc
+    programDoc, declDoc, stmtDoc, exprDoc, binaryOpDoc, valueDoc, typeDoc
 ) where
 
 import Data.Char
@@ -61,24 +61,24 @@ stmtDoc (WhileStmt condition stmts)             = vcat [
 exprDoc :: Expr -> Doc
 exprDoc (ApplicationExpr name arguments)    = text name <+> fsep (map exprDoc arguments)
 -- TODO (hjw): don't use so many parenthesis
-exprDoc (InfixExpr op lhs rhs)              = parens $ fsep [exprDoc lhs, infixOpDoc op, exprDoc rhs]
+exprDoc (BinaryExpr op lhs rhs)             = parens $ fsep [exprDoc lhs, binaryOpDoc op, exprDoc rhs]
 exprDoc (ListExpr elements)                 = brackets $ fsep (punctuate comma (map exprDoc elements))
 exprDoc (ValueExpr value)                   = valueDoc value
 
--- | 'InfixOp' document
-infixOpDoc :: InfixOp -> Doc
-infixOpDoc Acc  = text "!!"
-infixOpDoc Mul  = text "*"
-infixOpDoc Div  = text "/"
-infixOpDoc Mod  = text "%"
-infixOpDoc Add  = text "+"
-infixOpDoc Sub  = text "-"
-infixOpDoc Lt   = text "<"
-infixOpDoc Lte  = text "<="
-infixOpDoc Gt   = text ">"
-infixOpDoc Gte  = text ">="
-infixOpDoc Eq   = text "=="
-infixOpDoc Neq  = text "!="
+-- | 'BinaryOp' document
+binaryOpDoc :: BinaryOp -> Doc
+binaryOpDoc Acc = text "!!"
+binaryOpDoc Mul = text "*"
+binaryOpDoc Div = text "/"
+binaryOpDoc Mod = text "%"
+binaryOpDoc Add = text "+"
+binaryOpDoc Sub = text "-"
+binaryOpDoc Lt  = text "<"
+binaryOpDoc Lte = text "<="
+binaryOpDoc Gt  = text ">"
+binaryOpDoc Gte = text ">="
+binaryOpDoc Eq  = text "=="
+binaryOpDoc Neq = text "!="
 
 -- | 'Value' document
 valueDoc :: Value -> Doc

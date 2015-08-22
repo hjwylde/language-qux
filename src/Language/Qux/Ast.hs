@@ -34,13 +34,13 @@ data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false b
 
 -- | A complex expression.
 data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name to call and the arguments to pass.
-            | InfixExpr InfixOp Expr Expr   -- ^ An infix operation.
+            | BinaryExpr BinaryOp Expr Expr -- ^ A binary operation.
             | ListExpr [Expr]               -- ^ A list of expressions.
             | ValueExpr Value               -- ^ A raw value.
     deriving (Eq, Show)
 
--- | An infix operator.
-data InfixOp    = Acc
+-- | A binary operator.
+data BinaryOp   = Acc
                 | Mul | Div | Mod
                 | Add | Sub
                 | Lt  | Lte | Gt | Gte

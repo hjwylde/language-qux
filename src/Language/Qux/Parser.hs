@@ -89,26 +89,26 @@ expr = buildExpressionParser table (try application <|> term) <?> "expression"
 table :: OperatorTable String () (State SourcePos) Expr
 table = [
     [
-        Infix (InfixExpr Acc <$ operator "!!") AssocLeft
+        Infix (BinaryExpr Acc <$ operator "!!") AssocLeft
     ],
     [
-        Infix (InfixExpr Mul <$ operator "*") AssocLeft,
-        Infix (InfixExpr Div <$ operator "/") AssocLeft,
-        Infix (InfixExpr Mod <$ operator "%") AssocLeft
+        Infix (BinaryExpr Mul <$ operator "*") AssocLeft,
+        Infix (BinaryExpr Div <$ operator "/") AssocLeft,
+        Infix (BinaryExpr Mod <$ operator "%") AssocLeft
     ],
     [
-        Infix (InfixExpr Add <$ operator "+") AssocLeft,
-        Infix (InfixExpr Sub <$ operator "-") AssocLeft
+        Infix (BinaryExpr Add <$ operator "+") AssocLeft,
+        Infix (BinaryExpr Sub <$ operator "-") AssocLeft
     ],
     [
-        Infix (InfixExpr Lte <$ operator "<=") AssocLeft,
-        Infix (InfixExpr Lt <$ operator "<") AssocLeft,
-        Infix (InfixExpr Gte <$ operator ">=") AssocLeft,
-        Infix (InfixExpr Gt <$ operator ">") AssocLeft
+        Infix (BinaryExpr Lte <$ operator "<=") AssocLeft,
+        Infix (BinaryExpr Lt <$ operator "<") AssocLeft,
+        Infix (BinaryExpr Gte <$ operator ">=") AssocLeft,
+        Infix (BinaryExpr Gt <$ operator ">") AssocLeft
     ],
     [
-        Infix (InfixExpr Eq <$ operator "==") AssocLeft,
-        Infix (InfixExpr Neq <$ operator "!=") AssocLeft
+        Infix (BinaryExpr Eq <$ operator "==") AssocLeft,
+        Infix (BinaryExpr Neq <$ operator "!=") AssocLeft
     ]
     ]
 

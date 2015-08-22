@@ -119,7 +119,7 @@ checkExpr (ApplicationExpr name arguments)  = do
         False -> throwError $ invalidArgumentsCount (length expected) (length arguments)
 
     return $ head (env ! "@")
-checkExpr (InfixExpr op lhs rhs)
+checkExpr (BinaryExpr op lhs rhs)
     | op `elem` [Acc]               = expectExpr lhs [ListType undefined] <* expectExpr rhs [IntType]
     | op `elem` [Mul, Div, Mod]     = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
     | op `elem` [Add, Sub]          = checkExpr lhs >>= \lhs' -> expectExpr rhs [lhs'] >>= expectType [IntType, ListType undefined]
