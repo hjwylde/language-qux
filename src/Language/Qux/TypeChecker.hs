@@ -120,8 +120,9 @@ checkExpr (ApplicationExpr name arguments)  = do
 
     return $ head (env ! "@")
 checkExpr (InfixExpr op lhs rhs)
+    | op `elem` [Acc]               = expectExpr lhs [ListType undefined] <* expectExpr rhs [IntType]
+    | op `elem` [Mul, Div, Mod]     = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
     | op `elem` [Add, Sub]          = checkExpr lhs >>= \lhs' -> expectExpr rhs [lhs'] >>= expectType [IntType, ListType undefined]
-    | op `elem` [Mul, Div]          = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
     | op `elem` [Lt, Lte, Gt, Gte]  = expectExpr lhs [IntType] >> expectExpr rhs [IntType] *> return BoolType
     | op `elem` [Eq, Neq]           = ((:[]) <$> checkExpr lhs >>= expectExpr rhs) *> return BoolType
 checkExpr (ListExpr elements)               = mapM checkExpr elements >>= checkElementTypes

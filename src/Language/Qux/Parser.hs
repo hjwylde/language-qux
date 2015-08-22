@@ -11,8 +11,10 @@ A "Text.Parsec" indentation-based parser for generating a 'Program'.
 -}
 
 module Language.Qux.Parser (
-    -- * Parsing
+    -- * Types
     Parser, ParseError,
+
+    -- ** Parsing
     parse,
 
     -- ** Parsers
@@ -32,6 +34,7 @@ import Text.Parsec.Indent
 
 -- | A 'ParsecT' that retains indentation information.
 type Parser a = ParsecT String () (State SourcePos) a
+
 
 -- |    @parse parser sourceName input@ parses @input@ using @parser@.
 --      Returns either a 'ParseError' or @a@.
@@ -86,8 +89,12 @@ expr = buildExpressionParser table (try application <|> term) <?> "expression"
 table :: OperatorTable String () (State SourcePos) Expr
 table = [
     [
+        Infix (InfixExpr Acc <$ operator "!!") AssocLeft
+    ],
+    [
         Infix (InfixExpr Mul <$ operator "*") AssocLeft,
-        Infix (InfixExpr Div <$ operator "/") AssocLeft
+        Infix (InfixExpr Div <$ operator "/") AssocLeft,
+        Infix (InfixExpr Mod <$ operator "%") AssocLeft
     ],
     [
         Infix (InfixExpr Add <$ operator "+") AssocLeft,

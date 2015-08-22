@@ -40,7 +40,7 @@ declDoc (FunctionDecl name parameters stmts) = vcat [
     ]
     where
         parametersDoc = fsep $ punctuate
-            (space <> rightArrow)
+            (space <> text "->")
             (map (\(t, p) -> typeDoc t <+> (if p == "@" then empty else text p)) parameters)
 
 -- | 'Stmt' document
@@ -60,22 +60,25 @@ stmtDoc (WhileStmt condition stmts)             = vcat [
 -- | 'Expr' document
 exprDoc :: Expr -> Doc
 exprDoc (ApplicationExpr name arguments)    = text name <+> fsep (map exprDoc arguments)
+-- TODO (hjw): don't use so many parenthesis
 exprDoc (InfixExpr op lhs rhs)              = parens $ fsep [exprDoc lhs, infixOpDoc op, exprDoc rhs]
 exprDoc (ListExpr elements)                 = brackets $ fsep (punctuate comma (map exprDoc elements))
 exprDoc (ValueExpr value)                   = valueDoc value
 
 -- | 'InfixOp' document
 infixOpDoc :: InfixOp -> Doc
-infixOpDoc Add  = text "+"
-infixOpDoc Sub  = text "-"
+infixOpDoc Acc  = text "!!"
 infixOpDoc Mul  = text "*"
 infixOpDoc Div  = text "/"
-infixOpDoc Eq   = text "=="
-infixOpDoc Neq  = text "!="
+infixOpDoc Mod  = text "%"
+infixOpDoc Add  = text "+"
+infixOpDoc Sub  = text "-"
 infixOpDoc Lt   = text "<"
 infixOpDoc Lte  = text "<="
 infixOpDoc Gt   = text ">"
 infixOpDoc Gte  = text ">="
+infixOpDoc Eq   = text "=="
+infixOpDoc Neq  = text "!="
 
 -- | 'Value' document
 valueDoc :: Value -> Doc
@@ -96,6 +99,4 @@ block :: [Stmt] -> Doc
 block = vcat . (map stmtDoc)
 
 emptyLine = text ""
-
-rightArrow = text "->"
 

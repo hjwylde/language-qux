@@ -40,7 +40,8 @@ data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name to call and the
     deriving (Eq, Show)
 
 -- | An infix operator.
-data InfixOp    = Mul | Div
+data InfixOp    = Acc
+                | Mul | Div | Mod
                 | Add | Sub
                 | Lt  | Lte | Gt | Gte
                 | Eq  | Neq

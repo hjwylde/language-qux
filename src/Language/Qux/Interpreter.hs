@@ -104,22 +104,24 @@ reduceExpr (ValueExpr value)                = return value
 
 
 reduceInfixExpr :: InfixOp -> Value -> Value -> Env Value
-reduceInfixExpr Add (IntValue lhs)  (IntValue rhs)  = return $ IntValue (lhs + rhs)
-reduceInfixExpr Add (ListValue lhs) (ListValue rhs) = return $ ListValue (lhs ++ rhs)
-reduceInfixExpr Sub (IntValue lhs)  (IntValue rhs)  = return $ IntValue (lhs - rhs)
-reduceInfixExpr Sub (ListValue lhs) (ListValue rhs) = return $ ListValue (lhs \\ rhs)
-reduceInfixExpr Mul (IntValue lhs)  (IntValue rhs)  = return $ IntValue (lhs * rhs)
-reduceInfixExpr Div (IntValue lhs)  (IntValue rhs)  = return $ IntValue (lhs `div` rhs)
-reduceInfixExpr Eq  (BoolValue lhs) (BoolValue rhs) = return $ BoolValue (lhs == rhs)
-reduceInfixExpr Eq  (IntValue lhs)  (IntValue rhs)  = return $ BoolValue (lhs == rhs)
-reduceInfixExpr Eq  (ListValue lhs) (ListValue rhs) = return $ BoolValue (lhs == rhs)
-reduceInfixExpr Eq  NilValue        NilValue        = return $ BoolValue True
-reduceInfixExpr Eq  _               _               = return $ BoolValue False
-reduceInfixExpr Neq lhs             rhs             = reduceInfixExpr Eq lhs rhs >>= return . BoolValue . not . bool
-reduceInfixExpr Lt  (IntValue lhs) (IntValue rhs)   = return $ BoolValue (lhs < rhs)
-reduceInfixExpr Lte (IntValue lhs) (IntValue rhs)   = return $ BoolValue (lhs <= rhs)
-reduceInfixExpr Gt  (IntValue lhs) (IntValue rhs)   = return $ BoolValue (lhs > rhs)
-reduceInfixExpr Gte (IntValue lhs) (IntValue rhs)   = return $ BoolValue (lhs >= rhs)
+reduceInfixExpr Acc (ListValue elements) (IntValue rhs) = return $ elements !! (fromInteger rhs)
+reduceInfixExpr Mul (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs * rhs)
+reduceInfixExpr Div (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs `div` rhs)
+reduceInfixExpr Mod (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs `mod` rhs)
+reduceInfixExpr Add (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs + rhs)
+reduceInfixExpr Add (ListValue lhs) (ListValue rhs)     = return $ ListValue (lhs ++ rhs)
+reduceInfixExpr Sub (IntValue lhs)  (IntValue rhs)      = return $ IntValue (lhs - rhs)
+reduceInfixExpr Sub (ListValue lhs) (ListValue rhs)     = return $ ListValue (lhs \\ rhs)
+reduceInfixExpr Lt  (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs < rhs)
+reduceInfixExpr Lte (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs <= rhs)
+reduceInfixExpr Gt  (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs > rhs)
+reduceInfixExpr Gte (IntValue lhs) (IntValue rhs)       = return $ BoolValue (lhs >= rhs)
+reduceInfixExpr Eq  (BoolValue lhs) (BoolValue rhs)     = return $ BoolValue (lhs == rhs)
+reduceInfixExpr Eq  (IntValue lhs)  (IntValue rhs)      = return $ BoolValue (lhs == rhs)
+reduceInfixExpr Eq  (ListValue lhs) (ListValue rhs)     = return $ BoolValue (lhs == rhs)
+reduceInfixExpr Eq  NilValue        NilValue            = return $ BoolValue True
+reduceInfixExpr Eq  _               _                   = return $ BoolValue False
+reduceInfixExpr Neq lhs             rhs                 = reduceInfixExpr Eq lhs rhs >>= return . BoolValue . not . bool
 
 bool :: Value -> Bool
 bool (BoolValue value) = value
