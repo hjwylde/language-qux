@@ -126,6 +126,7 @@ reduceBinaryExpr Neq lhs             rhs                    = reduceBinaryExpr E
 
 reduceUnaryExpr :: UnaryOp -> Value -> Env Value
 reduceUnaryExpr Len (ListValue elements) = return $ IntValue (toInteger $ length elements)
+reduceUnaryExpr Neg (IntValue value) = return $ IntValue (-value)
 
 
 bool :: Value -> Bool

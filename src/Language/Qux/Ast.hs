@@ -49,7 +49,8 @@ data BinaryOp   = Acc
     deriving (Eq, Show)
 
 -- | A unary operator.
-data UnaryOp = Len
+data UnaryOp    = Len
+                | Neg
     deriving (Eq, Show)
 
 -- | A value is considered to be in it's normal form.

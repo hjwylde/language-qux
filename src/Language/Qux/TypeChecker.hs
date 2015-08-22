@@ -126,6 +126,9 @@ checkExpr (BinaryExpr op lhs rhs)
     | op `elem` [Lt, Lte, Gt, Gte]  = expectExpr lhs [IntType] >> expectExpr rhs [IntType] *> return BoolType
     | op `elem` [Eq, Neq]           = ((:[]) <$> checkExpr lhs >>= expectExpr rhs) *> return BoolType
 checkExpr (ListExpr elements)               = mapM checkExpr elements >>= checkElementTypes
+checkExpr (UnaryExpr op expr)
+    | op `elem` [Len]               = expectExpr expr [ListType undefined] *> return IntType
+    | op `elem` [Neg]               = expectExpr expr [IntType]
 checkExpr (ValueExpr value)                 = checkValue value
 
 -- | Type checks a value.

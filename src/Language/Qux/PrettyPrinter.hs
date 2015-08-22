@@ -28,11 +28,11 @@ import Language.Qux.Ast
 import Text.PrettyPrint
 
 
--- | 'Program' document
+-- | 'Program' document.
 programDoc :: Program -> Doc
 programDoc (Program decls) = vcat $ map (($+$ emptyLine) . declDoc) decls
 
--- | 'Decl' document
+-- | 'Decl' document.
 declDoc :: Decl -> Doc
 declDoc (FunctionDecl name parameters stmts) = vcat [
     text name <+> text "::" <+> parametersDoc <> colon,
@@ -43,7 +43,7 @@ declDoc (FunctionDecl name parameters stmts) = vcat [
             (space <> text "->")
             (map (\(t, p) -> typeDoc t <+> (if p == "@" then empty else text p)) parameters)
 
--- | 'Stmt' document
+-- | 'Stmt' document.
 stmtDoc :: Stmt -> Doc
 stmtDoc (IfStmt condition trueStmts falseStmts) = vcat [
     text "if" <+> exprDoc condition <> colon,
@@ -57,16 +57,17 @@ stmtDoc (WhileStmt condition stmts)             = vcat [
     nest 4 (block stmts)
     ]
 
--- | 'Expr' document
+-- | 'Expr' document.
 exprDoc :: Expr -> Doc
 exprDoc (ApplicationExpr name arguments)    = text name <+> fsep (map exprDoc arguments)
 -- TODO (hjw): don't use so many parenthesis
 exprDoc (BinaryExpr op lhs rhs)             = parens $ fsep [exprDoc lhs, binaryOpDoc op, exprDoc rhs]
 exprDoc (ListExpr elements)                 = brackets $ fsep (punctuate comma (map exprDoc elements))
 exprDoc (UnaryExpr Len expr)                = pipes $ exprDoc expr
+exprDoc (UnaryExpr op expr)                 = unaryOpDoc op <> exprDoc expr
 exprDoc (ValueExpr value)                   = valueDoc value
 
--- | 'BinaryOp' document
+-- | 'BinaryOp' document.
 binaryOpDoc :: BinaryOp -> Doc
 binaryOpDoc Acc = text "!!"
 binaryOpDoc Mul = text "*"
@@ -81,14 +82,18 @@ binaryOpDoc Gte = text ">="
 binaryOpDoc Eq  = text "=="
 binaryOpDoc Neq = text "!="
 
--- | 'Value' document
+-- | 'UnaryOp' document.
+unaryOpDoc :: UnaryOp -> Doc
+unaryOpDoc Neg = text "-"
+
+-- | 'Value' document.
 valueDoc :: Value -> Doc
 valueDoc (BoolValue bool)       = text $ map toLower (show bool)
 valueDoc (IntValue int)         = text $ show int
 valueDoc (ListValue elements)   = brackets $ fsep (punctuate comma (map valueDoc elements))
 valueDoc NilValue               = text "nil"
 
--- | 'Type' document
+-- | 'Type' document.
 typeDoc :: Type -> Doc
 typeDoc BoolType            = text "Bool"
 typeDoc IntType             = text "Int"

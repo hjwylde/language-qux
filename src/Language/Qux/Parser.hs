@@ -89,6 +89,9 @@ expr = buildExpressionParser table (try application <|> term) <?> "expression"
 table :: OperatorTable String () (State SourcePos) Expr
 table = [
     [
+        Prefix (UnaryExpr Neg <$ operator "-")
+    ],
+    [
         Infix (BinaryExpr Acc <$ operator "!!") AssocLeft
     ],
     [
