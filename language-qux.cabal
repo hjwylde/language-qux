@@ -18,6 +18,7 @@ build-type:     Simple
 library
     hs-source-dirs: src/
     exposed-modules:
+        Language.Qux.Annotated.PrettyPrinter,
         Language.Qux.Annotated.Simplify,
         Language.Qux.Annotated.Syntax,
         Language.Qux.Exception,
