@@ -103,7 +103,7 @@ valueDoc NilValue               = text "nil"
 typeDoc :: Type -> Doc
 typeDoc BoolType            = text "Bool"
 typeDoc IntType             = text "Int"
-typeDoc (ListType type_)    = brackets $ typeDoc type_
+typeDoc (ListType inner)    = brackets $ typeDoc inner
 typeDoc NilType             = text "Nil"
 
 

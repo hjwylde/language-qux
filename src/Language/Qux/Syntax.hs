@@ -1,13 +1,13 @@
 
 {-|
 Module      : Language.Qux.Syntax
-Description : Contains the abstract syntax tree elements.
+Description : Abstract syntax tree nodes.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
 Maintainer  : public@hjwylde.com
 
-Contains the abstract syntax tree elements.
+Abstract syntax tree nodes.
 -}
 
 module Language.Qux.Syntax where
