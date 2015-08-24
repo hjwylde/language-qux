@@ -18,11 +18,11 @@ build-type:     Simple
 library
     hs-source-dirs: src/
     exposed-modules:
-        Language.Qux.Ast,
         Language.Qux.Exception,
         Language.Qux.Interpreter,
         Language.Qux.Parser,
         Language.Qux.PrettyPrinter,
+        Language.Qux.Syntax,
         Language.Qux.TypeChecker,
         Language.Qux.Version
     other-modules:

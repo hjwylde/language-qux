@@ -1,6 +1,6 @@
 
 {-|
-Module      : Language.Qux.Ast
+Module      : Language.Qux.Syntax
 Description : Contains the abstract syntax tree elements.
 
 Copyright   : (c) Henry J. Wylde, 2015
@@ -10,7 +10,7 @@ Maintainer  : public@hjwylde.com
 Contains the abstract syntax tree elements.
 -}
 
-module Language.Qux.Ast where
+module Language.Qux.Syntax where
 
 
 -- | An identifier.
@@ -28,7 +28,7 @@ data Decl = FunctionDecl Id [(Type, Id)] [Stmt] -- ^ A name, list of ('Type', 'I
 
 -- | A statement.
 data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false block of statements.
-            | ReturnStmt Expr           -- ^ An expression
+            | ReturnStmt Expr           -- ^ An expression.
             | WhileStmt Expr [Stmt]     -- ^ A condition and block of statements.
     deriving (Eq, Show)
 

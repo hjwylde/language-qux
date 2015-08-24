@@ -24,8 +24,8 @@ module Language.Qux.Parser (
 import Control.Applicative
 import Control.Monad.State
 
-import Language.Qux.Ast
 import Language.Qux.Lexer
+import Language.Qux.Syntax
 
 import Text.Parsec hiding (State, (<|>), many, parse)
 import Text.Parsec.Expr

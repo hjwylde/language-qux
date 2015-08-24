@@ -38,7 +38,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 
-import Language.Qux.Ast
+import Language.Qux.Syntax
 import Language.Qux.Util
 
 

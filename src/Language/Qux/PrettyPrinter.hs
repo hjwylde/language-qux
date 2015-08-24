@@ -23,10 +23,12 @@ module Language.Qux.PrettyPrinter (
 import Data.Char
 import Data.List
 
-import Language.Qux.Ast
+import Language.Qux.Syntax
 
 import Text.PrettyPrint
 
+-- TODO (hjw): use the Pretty class
+-- TODO (hjw): use maybeParens to avoid using so many parenthesis
 
 -- | Renders the 'Doc' to a 'String' on one line.
 renderOneLine :: Doc -> String
@@ -65,7 +67,6 @@ stmtDoc (WhileStmt condition stmts)             = vcat [
 -- | 'Expr' document.
 exprDoc :: Expr -> Doc
 exprDoc (ApplicationExpr name arguments)    = text name <+> fsep (map exprDoc arguments)
--- TODO (hjw): don't use so many parenthesis
 exprDoc (BinaryExpr op lhs rhs)             = parens $ fsep [exprDoc lhs, binaryOpDoc op, exprDoc rhs]
 exprDoc (ListExpr elements)                 = brackets $ fsep (punctuate comma (map exprDoc elements))
 exprDoc (UnaryExpr Len expr)                = pipes $ exprDoc expr

@@ -39,8 +39,8 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.Tuple
 
-import Language.Qux.Ast
 import Language.Qux.Exception
+import Language.Qux.Syntax
 import Language.Qux.Util
 
 

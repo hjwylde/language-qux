@@ -20,8 +20,8 @@ module Language.Qux.Exception (
 
 import Data.List
 
-import Language.Qux.Ast
 import Language.Qux.PrettyPrinter
+import Language.Qux.Syntax
 
 import Text.PrettyPrint
 
