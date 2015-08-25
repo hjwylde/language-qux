@@ -1,6 +1,7 @@
 .cabal-sandbox/
 .hpc
 .hsenv
+.stack-work/
 .virtualenv
 
 cabal.sandbox.config
