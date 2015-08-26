@@ -73,7 +73,7 @@ pipes p = Token.lexeme lexer $ between (symbol "|") (symbol "|") p
 rightArrow = symbol "->"
 
 
-quxDef :: Token.GenLanguageDef String st (State SourcePos)
+quxDef :: Token.GenLanguageDef String u (State SourcePos)
 quxDef = Token.LanguageDef
     commentStart
     commentEnd
@@ -101,16 +101,9 @@ quxDef = Token.LanguageDef
 
 keywords = [
     "_",
-    "else",
-    "false",
-    "if",
-    "nil",
-    "return",
-    "true",
-    "while",
-    "Bool",
-    "Int",
-    "Nil"
+    "else", "if", "return", "while",
+    "false", "nil", "true",
+    "Bool", "Int", "Nil"
     ]
 
 operators = [

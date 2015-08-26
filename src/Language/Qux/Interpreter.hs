@@ -46,7 +46,7 @@ import Language.Qux.Syntax
 -- |    An environment that holds the global state (@Reader Context@) and the local state
 --      (@Locals@).
 --      It supports breaking out of execution (via 'EitherT Value').
-type Execution = EitherT Value (StateT Locals (Reader Context))
+type Execution = EitherT Value Evaluation
 
 -- |    An environment that holds the global state (@Reader Context@) and the local state
 --      (@Locals@).
@@ -144,8 +144,8 @@ evalBinaryExpr Eq  _               _                      = return $ BoolValue F
 evalBinaryExpr Neq lhs             rhs                    = evalBinaryExpr Eq lhs rhs >>= return . BoolValue . not . runBoolValue
 
 evalUnaryExpr :: UnaryOp -> Value -> Evaluation Value
-evalUnaryExpr Len (ListValue elements) = return $ IntValue (toInteger $ length elements)
-evalUnaryExpr Neg (IntValue value) = return $ IntValue (-value)
+evalUnaryExpr Len (ListValue elements)  = return $ IntValue (toInteger $ length elements)
+evalUnaryExpr Neg (IntValue value)      = return $ IntValue (-value)
 
 
 runBoolValue :: Value -> Bool

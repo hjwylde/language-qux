@@ -60,7 +60,7 @@ data Value  = BoolValue Bool    -- ^ A boolean.
             | NilValue          -- ^ A unit value.
     deriving (Eq, Show)
 
--- | A type
+-- | A type.
 data Type   = BoolType
             | IntType
             | ListType Type -- ^ A list type with an inner type.

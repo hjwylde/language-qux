@@ -19,7 +19,7 @@ import qualified Language.Qux.Annotated.Syntax as Ann
 import Language.Qux.Syntax
 
 
--- | Simplifies an id.
+-- | Simplifies an identifier.
 sId :: Ann.Id a -> String
 sId (Ann.Id _ id) = id
 

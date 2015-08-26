@@ -78,7 +78,7 @@ instance Annotated Expr where
     ann (UnaryExpr a _ _)       = a
     ann (ValueExpr a _)         = a
 
--- | A type
+-- | A type.
 data Type a = BoolType a
             | IntType a
             | ListType a (Type a) -- ^ A list type with an inner type.
