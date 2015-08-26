@@ -29,8 +29,7 @@ library
         Language.Qux.TypeChecker,
         Language.Qux.Version
     other-modules:
-        Language.Qux.Lexer,
-        Language.Qux.Util
+        Language.Qux.Lexer
 
     default-language: Haskell2010
     build-depends:

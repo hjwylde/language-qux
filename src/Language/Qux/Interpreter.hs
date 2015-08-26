@@ -15,120 +15,139 @@ That is, it must be well-typed (see "Language.Qux.TypeChecker").
 
 module Language.Qux.Interpreter (
     -- * Environment
-    Env, BreakingEnv,
-    buildEnv,
+    Execution, Evaluation,
+    runExec,
 
-    -- * Execution
+    -- * Contexts
+    Context, Locals,
+    context,
 
-    -- ** Program execution
-    execute,
+    -- * Interpreter
 
-    -- ** Other node execution
-    executeFunction, executeStmt,
+    -- ** Program  execution
+    exec, execStmt,
 
-    -- ** Expression reducing
-    reduceExpr
+    -- ** Expression evaluation
+    evalExpr
 ) where
 
+import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Either
 
 import Data.List
-import Data.Map (Map)
+import Data.Map (Map, (!))
 import qualified Data.Map as Map
 import Data.Maybe
 
 import Language.Qux.Syntax
-import Language.Qux.Util
 
 
--- |    An environment that holds the current state of identifiers to declarations.
---      An identifier is a function name.
-type Env = State (Map Id Decl)
+-- |    An environment that holds the global state (@Reader Context@) and the local state
+--      (@Locals@).
+--      It supports breaking out of execution (via 'EitherT Value').
+type Execution = EitherT Value (StateT Locals (Reader Context))
 
--- | Builds an initial environment from a program's declarations.
-buildEnv :: Program -> Map Id Decl
-buildEnv (Program decls) = Map.fromList $ map (\d@(FunctionDecl name _ _) -> (name, d)) decls
+-- |    An environment that holds the global state (@Reader Context@) and the local state
+--      (@Locals@).
+--      Purely for evaluation of expressions---this environment does not support breaking out of
+--      execution.
+type Evaluation = StateT Locals (Reader Context)
 
--- | An 'EitherT' that enables breaking execution (e.g., due to return statements).
-type BreakingEnv = EitherT Value Env
+
+runExec :: (a -> Value) -> Execution a -> Evaluation Value
+runExec f exec = either id f <$> runEitherT exec
 
 
--- |    @execute program entry arguments@ executes @entry@ (passing it @arguments@) in the context
+-- |    Global context that holds function definitions.
+--      The function name, parameter names and statements are held.
+data Context = Context {
+    functions :: Map Id ([Id], [Stmt])
+    }
+
+-- | Local context.
+type Locals = Map Id Value
+
+
+-- | Returns a context for the given program.
+context :: Program -> Context
+context (Program decls) = Context { functions = functionsMap }
+    where
+        functionsMap = Map.fromList $ map
+            (\(FunctionDecl id parameters stmts) -> (id, (init $ map snd parameters, stmts)))
+            decls
+
+once :: Monad m => (s -> s) -> StateT s m a -> StateT s m a
+once f s = withStateT f s >>= \a -> (const a) <$> s
+
+
+-- |    @exec program entry arguments@ executes @entry@ (passing it @arguments@) in the context
 --      of @program@.
---      This function wraps 'executeFunction' by building and evaluating the 'Env' under the
+--      This function wraps 'execFunction' by building and evaluating the 'Env' under the
 --      hood.
-execute :: Program -> Id -> [Value] -> Value
-execute program entry arguments = evalState (executeFunction entry arguments) (buildEnv program)
+exec :: Program -> Id -> [Value] -> Value
+exec program entry arguments = runReader (evalStateT (evalApplicationExpr entry arguments) Map.empty) (context program)
 
--- | Executes the function with the given arguments, returning the result.
-executeFunction :: Id -> [Value] -> Env Value
-executeFunction name arguments = do
-    maybeDecl <- Map.lookup name <$> get
-    let (FunctionDecl _ parameters stmts) = fromJust maybeDecl
-    let parametersMap = Map.fromList $ map
-            (\(p, a) -> (p, FunctionDecl p [] [ReturnStmt $ ValueExpr a]))
-            (zip (delete "@" $ map snd parameters) arguments)
-
-    either id undefined <$> (
-        runStateWith (runEitherT $ executeBlock stmts) (Map.union parametersMap)
-        )
-
-executeBlock :: [Stmt] -> BreakingEnv ()
-executeBlock = mapM_ executeStmt
+execBlock :: [Stmt] -> Execution ()
+execBlock = mapM_ execStmt
 
 -- | Executes the statement in a breaking environment.
-executeStmt :: Stmt -> BreakingEnv ()
-executeStmt (IfStmt condition trueStmts falseStmts) = do
-    result <- lift $ reduceExpr condition
+execStmt :: Stmt -> Execution ()
+execStmt (IfStmt condition trueStmts falseStmts) = do
+    result <- lift $ evalExpr condition
 
-    executeBlock $ case bool result of
+    execBlock $ case runBoolValue result of
         True    -> trueStmts
         False   -> falseStmts
-executeStmt (ReturnStmt expr)                       = lift (reduceExpr expr) >>= left
-executeStmt s@(WhileStmt condition stmts)           = do
-    result <- lift $ reduceExpr condition
+execStmt (ReturnStmt expr)                       = lift (evalExpr expr) >>= left
+execStmt s@(WhileStmt condition stmts)           = do
+    result <- lift $ evalExpr condition
 
-    when (bool result) $ executeBlock stmts >> executeStmt s
+    when (runBoolValue result) $ execBlock stmts >> execStmt s
 
 -- | Reduces the expression to a value (normal form).
-reduceExpr :: Expr -> Env Value
-reduceExpr (ApplicationExpr name arguments) = mapM reduceExpr arguments >>= executeFunction name
-reduceExpr (BinaryExpr op lhs rhs)          = do
-    lhs' <- reduceExpr lhs
-    rhs' <- reduceExpr rhs
+evalExpr :: Expr -> Evaluation Value
+evalExpr (ApplicationExpr name arguments) = mapM evalExpr arguments >>= evalApplicationExpr name
+evalExpr (BinaryExpr op lhs rhs)          = do
+    lhs' <- evalExpr lhs
+    rhs' <- evalExpr rhs
 
-    reduceBinaryExpr op lhs' rhs'
-reduceExpr (ListExpr exprs)                 = ListValue <$> mapM reduceExpr exprs
-reduceExpr (UnaryExpr op expr)              = reduceExpr expr >>= reduceUnaryExpr op
-reduceExpr (ValueExpr value)                = return value
+    evalBinaryExpr op lhs' rhs'
+evalExpr (ListExpr exprs)                 = ListValue <$> mapM evalExpr exprs
+evalExpr (UnaryExpr op expr)              = evalExpr expr >>= evalUnaryExpr op
+evalExpr (ValueExpr value)                = return value
+
+evalApplicationExpr :: Id -> [Value] -> Evaluation Value
+evalApplicationExpr name arguments = do
+    (parameters, stmts) <- asks $ (! name) . functions
+
+    once (flip Map.union (Map.fromList $ zip parameters arguments)) (runExec undefined (execBlock stmts))
+
+evalBinaryExpr :: BinaryOp -> Value -> Value -> Evaluation Value
+evalBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)
+evalBinaryExpr Mul (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs * rhs)
+evalBinaryExpr Div (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `div` rhs)
+evalBinaryExpr Mod (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `mod` rhs)
+evalBinaryExpr Add (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs + rhs)
+evalBinaryExpr Add (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs ++ rhs)
+evalBinaryExpr Sub (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs - rhs)
+evalBinaryExpr Sub (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs \\ rhs)
+evalBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs < rhs)
+evalBinaryExpr Lte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs <= rhs)
+evalBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs > rhs)
+evalBinaryExpr Gte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs >= rhs)
+evalBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)        = return $ BoolValue (lhs == rhs)
+evalBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs == rhs)
+evalBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue (lhs == rhs)
+evalBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue True
+evalBinaryExpr Eq  _               _                      = return $ BoolValue False
+evalBinaryExpr Neq lhs             rhs                    = evalBinaryExpr Eq lhs rhs >>= return . BoolValue . not . runBoolValue
+
+evalUnaryExpr :: UnaryOp -> Value -> Evaluation Value
+evalUnaryExpr Len (ListValue elements) = return $ IntValue (toInteger $ length elements)
+evalUnaryExpr Neg (IntValue value) = return $ IntValue (-value)
 
 
-reduceBinaryExpr :: BinaryOp -> Value -> Value -> Env Value
-reduceBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)
-reduceBinaryExpr Mul (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs * rhs)
-reduceBinaryExpr Div (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `div` rhs)
-reduceBinaryExpr Mod (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `mod` rhs)
-reduceBinaryExpr Add (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs + rhs)
-reduceBinaryExpr Add (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs ++ rhs)
-reduceBinaryExpr Sub (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs - rhs)
-reduceBinaryExpr Sub (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs \\ rhs)
-reduceBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs < rhs)
-reduceBinaryExpr Lte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs <= rhs)
-reduceBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs > rhs)
-reduceBinaryExpr Gte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs >= rhs)
-reduceBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)        = return $ BoolValue (lhs == rhs)
-reduceBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs == rhs)
-reduceBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue (lhs == rhs)
-reduceBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue True
-reduceBinaryExpr Eq  _               _                      = return $ BoolValue False
-reduceBinaryExpr Neq lhs             rhs                    = reduceBinaryExpr Eq lhs rhs >>= return . BoolValue . not . bool
-
-reduceUnaryExpr :: UnaryOp -> Value -> Env Value
-reduceUnaryExpr Len (ListValue elements) = return $ IntValue (toInteger $ length elements)
-reduceUnaryExpr Neg (IntValue value) = return $ IntValue (-value)
-
-
-bool :: Value -> Bool
-bool (BoolValue value) = value
+runBoolValue :: Value -> Bool
+runBoolValue (BoolValue value) = value
 

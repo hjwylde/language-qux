@@ -41,7 +41,6 @@ import Data.Tuple
 
 import Language.Qux.Exception
 import Language.Qux.Syntax
-import Language.Qux.Util
 
 
 -- |    An environment that holds the current state of identifiers to types.
@@ -152,4 +151,8 @@ checkElementTypes [] = undefined
 checkElementTypes xs
     | length (nub xs) == 1  = return $ head xs
     | otherwise             = throwError $ mismatchedType (take 1 xs) (nub xs !! 1)
+
+
+runStateWith :: State s a -> (s -> s) -> State s a
+runStateWith r f = state $ \s -> (evalState r (f s), s)
 
