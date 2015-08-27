@@ -9,15 +9,15 @@ Maintainer  : public@hjwylde.com
 
 "Text.PrettyPrint" instances and rendering functions for Qux language elements.
 
-To render a program, call: @pretty program@
+To render a program, call: @render $ pPrint program@
 -}
 
 module Language.Qux.PrettyPrinter (
     -- * Types
-    Pretty(..),
+    Pretty(..), Style(..), Mode(..),
 
     -- * Rendering
-    pretty, prettyOneLine,
+    render, renderStyle, renderOneLine
 ) where
 
 import Data.Char
@@ -31,13 +31,9 @@ import Text.PrettyPrint.HughesPJClass
 
 -- TODO (hjw): use maybeParens to avoid using so many parenthesis
 
--- | @pretty = render . pPrint@.
-pretty :: Pretty a => a -> String
-pretty = render . pPrint
-
--- | Like 'pretty', but renders the doc on one line.
-prettyOneLine :: Pretty a => a -> String
-prettyOneLine = renderStyle (style { mode = OneLineMode }) . pPrint
+-- | Like 'render', but renders the doc on one line.
+renderOneLine :: Doc -> String
+renderOneLine = renderStyle (style { mode = OneLineMode })
 
 
 instance Pretty Doc where

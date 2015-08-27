@@ -9,19 +9,22 @@ Maintainer  : public@hjwylde.com
 
 "Text.PrettyPrint" instances and rendering functions for Qux language elements.
 
-To render a program, call: @pretty program@
+To render a program, call: @render $ pPrint program@
 -}
 
 module Language.Qux.Annotated.PrettyPrinter (
+    -- Types
+    Pretty(..), Style(..), Mode(..),
+
     -- * Rendering
-    pretty, prettyOneLine,
+    render, renderStyle, renderOneLine
 ) where
 
 import Language.Qux.Annotated.Simplify
 import Language.Qux.Annotated.Syntax
 import Language.Qux.PrettyPrinter
 
-import Text.PrettyPrint.HughesPJClass
+import Text.PrettyPrint
 
 
 instance Pretty (Id a) where
