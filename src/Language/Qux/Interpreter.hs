@@ -16,7 +16,7 @@ That is, it must be well-typed (see "Language.Qux.TypeChecker").
 module Language.Qux.Interpreter (
     -- * Environment
     Execution, Evaluation,
-    runExec,
+    runExecution,
 
     -- * Contexts
     Context, Locals,
@@ -55,8 +55,8 @@ type Execution = EitherT Value Evaluation
 type Evaluation = StateT Locals (Reader Context)
 
 
-runExec :: (a -> Value) -> Execution a -> Evaluation Value
-runExec f exec = either id f <$> runEitherT exec
+runExecution :: (a -> Value) -> Execution a -> Evaluation Value
+runExecution f exec = either id f <$> runEitherT exec
 
 
 -- |    Global context that holds function definitions.
@@ -121,7 +121,7 @@ evalApplicationExpr :: Id -> [Value] -> Evaluation Value
 evalApplicationExpr name arguments = do
     (parameters, stmts) <- asks $ (! name) . functions
 
-    once (flip Map.union (Map.fromList $ zip parameters arguments)) (runExec undefined (execBlock stmts))
+    once (flip Map.union (Map.fromList $ zip parameters arguments)) (runExecution undefined (execBlock stmts))
 
 evalBinaryExpr :: BinaryOp -> Value -> Value -> Evaluation Value
 evalBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)

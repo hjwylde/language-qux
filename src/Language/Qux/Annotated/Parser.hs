@@ -23,6 +23,7 @@ module Language.Qux.Annotated.Parser (
 
 import Control.Applicative
 import Control.Monad.State
+import Control.Monad.Trans.Except
 
 import Language.Qux.Annotated.Syntax
 import Language.Qux.Lexer
@@ -39,8 +40,8 @@ type Parser a = ParsecT String () (State SourcePos) a
 -- |    @parse parser sourceName input@ parses @input@ using @parser@.
 --      Returns either a 'ParseError' or @a@.
 --      This method wraps 'runParserT' by running the indentation resolver over the parser's state.
-parse :: Parser a -> SourceName -> String -> Either ParseError a
-parse parser sourceName input = runIndent sourceName $ runParserT parser () sourceName input
+parse :: Parser a -> SourceName -> String -> Except ParseError a
+parse parser sourceName input = except $ runIndent sourceName (runParserT parser () sourceName input)
 
 
 -- | 'Id' parser.

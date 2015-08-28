@@ -64,9 +64,8 @@ type Check = ExceptT TypeException Env
 -- |    Type checks the program.
 --      If an exception occurs then the result will be a 'TypeException', otherwise 'Nothing'.
 --      This function wraps 'checkProgram' by building and evaluating the 'Env' under the hood.
-check :: Program -> Maybe TypeException
-check program = either Just (const Nothing) $
-    evalState (runExceptT $ checkProgram program) (buildEnv program)
+check :: Program -> Except TypeException ()
+check program = mapExceptT (return . (flip evalState $ buildEnv program)) (checkProgram program)
 
 
 -- | Type checks a program.

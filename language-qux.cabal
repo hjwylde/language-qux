@@ -39,5 +39,6 @@ library
         indents >= 0.3.3 && < 0.4,
         mtl == 2.*,
         parsec == 3.*,
-        pretty == 1.*
+        pretty == 1.*,
+        transformers == 0.4.*
 
