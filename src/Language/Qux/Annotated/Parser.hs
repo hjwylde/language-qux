@@ -13,6 +13,7 @@ A "Text.Parsec" indentation-based parser for generating a 'Program'.
 module Language.Qux.Annotated.Parser (
     -- * Types
     Parser, ParseError, SourcePos,
+    sourceName, sourceLine, sourceColumn,
 
     -- ** Parsing
     parse,
@@ -21,14 +22,13 @@ module Language.Qux.Annotated.Parser (
     program, decl, stmt, expr, value, type_
 ) where
 
-import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Trans.Except
 
 import Language.Qux.Annotated.Syntax
 import Language.Qux.Lexer
 
-import Text.Parsec hiding (State, (<|>), many, parse)
+import Text.Parsec hiding (State, parse)
 import Text.Parsec.Expr
 import Text.Parsec.Indent
 
@@ -69,7 +69,7 @@ decl = do
     colon
     indented
     stmts <- block stmt
-    return $ FunctionDecl pos name (parameters ++ [(returnType, Id undefined "@")]) stmts
+    return $ FunctionDecl pos name (parameters ++ [(returnType, Id pos "@")]) stmts
     <?> "function declaration"
 
 -- | 'Stmt' parser.

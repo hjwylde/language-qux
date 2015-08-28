@@ -23,10 +23,7 @@ module Language.Qux.Lexer (
 
 import Control.Monad.State
 
-import Data.List
-
 import Text.Parsec hiding (State)
-import Text.Parsec.Char
 import qualified Text.Parsec.Token as Token
 
 

@@ -24,7 +24,7 @@ import Language.Qux.Annotated.Simplify
 import Language.Qux.Annotated.Syntax
 import Language.Qux.PrettyPrinter
 
-import Text.PrettyPrint
+import Text.PrettyPrint (text)
 
 
 instance Pretty (Id a) where

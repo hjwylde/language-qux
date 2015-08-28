@@ -35,10 +35,9 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Either
 
-import Data.List
+import Data.List ((\\))
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
-import Data.Maybe
 
 import Language.Qux.Syntax
 
@@ -71,20 +70,16 @@ type Locals = Map Id Value
 
 -- | Returns a context for the given program.
 context :: Program -> Context
-context (Program decls) = Context { functions = functionsMap }
-    where
-        functionsMap = Map.fromList $ map
-            (\(FunctionDecl id parameters stmts) -> (id, (init $ map snd parameters, stmts)))
-            decls
+context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name d, (parameterNames d, stmts d))) decls }
 
-once :: Monad m => (s -> s) -> StateT s m a -> StateT s m a
-once f s = withStateT f s >>= \a -> (const a) <$> s
+once :: Monad m => MonadState s m => (s -> s) -> m a -> m a
+once f m = get >>= \save -> modify f >> m <* put save
 
 
 -- |    @exec program entry arguments@ executes @entry@ (passing it @arguments@) in the context
 --      of @program@.
---      This function wraps 'execFunction' by building and evaluating the 'Env' under the
---      hood.
+--      This function wraps 'execFunction' by building and evaluating the environment under
+--      the hood.
 exec :: Program -> Id -> [Value] -> Value
 exec program entry arguments = runReader (evalStateT (evalApplicationExpr entry arguments) Map.empty) (context program)
 
@@ -121,26 +116,26 @@ evalApplicationExpr :: Id -> [Value] -> Evaluation Value
 evalApplicationExpr name arguments = do
     (parameters, stmts) <- asks $ (! name) . functions
 
-    once (flip Map.union (Map.fromList $ zip parameters arguments)) (runExecution undefined (execBlock stmts))
+    once (Map.union $ Map.fromList (zip parameters arguments)) (runExecution undefined (execBlock stmts))
 
 evalBinaryExpr :: BinaryOp -> Value -> Value -> Evaluation Value
 evalBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)
-evalBinaryExpr Mul (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs * rhs)
-evalBinaryExpr Div (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `div` rhs)
-evalBinaryExpr Mod (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs `mod` rhs)
-evalBinaryExpr Add (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs + rhs)
-evalBinaryExpr Add (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs ++ rhs)
-evalBinaryExpr Sub (IntValue lhs)  (IntValue rhs)         = return $ IntValue (lhs - rhs)
-evalBinaryExpr Sub (ListValue lhs) (ListValue rhs)        = return $ ListValue (lhs \\ rhs)
-evalBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs < rhs)
-evalBinaryExpr Lte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs <= rhs)
-evalBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs > rhs)
-evalBinaryExpr Gte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs >= rhs)
-evalBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)        = return $ BoolValue (lhs == rhs)
-evalBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue (lhs == rhs)
-evalBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue (lhs == rhs)
-evalBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue True
-evalBinaryExpr Eq  _               _                      = return $ BoolValue False
+evalBinaryExpr Mul (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs * rhs)
+evalBinaryExpr Div (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs `div` rhs)
+evalBinaryExpr Mod (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs `mod` rhs)
+evalBinaryExpr Add (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs + rhs)
+evalBinaryExpr Add (ListValue lhs) (ListValue rhs)        = return $ ListValue  (lhs ++ rhs)
+evalBinaryExpr Sub (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs - rhs)
+evalBinaryExpr Sub (ListValue lhs) (ListValue rhs)        = return $ ListValue  (lhs \\ rhs)
+evalBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs < rhs)
+evalBinaryExpr Lte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs <= rhs)
+evalBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs > rhs)
+evalBinaryExpr Gte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs >= rhs)
+evalBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)        = return $ BoolValue  (lhs == rhs)
+evalBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs == rhs)
+evalBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue  (lhs == rhs)
+evalBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue  True
+evalBinaryExpr Eq  _               _                      = return $ BoolValue  False
 evalBinaryExpr Neq lhs             rhs                    = evalBinaryExpr Eq lhs rhs >>= return . BoolValue . not . runBoolValue
 
 evalUnaryExpr :: UnaryOp -> Value -> Evaluation Value

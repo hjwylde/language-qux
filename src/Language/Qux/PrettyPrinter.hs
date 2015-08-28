@@ -20,8 +20,7 @@ module Language.Qux.PrettyPrinter (
     render, renderStyle, renderOneLine
 ) where
 
-import Data.Char
-import Data.List
+import Data.Char (toLower)
 
 import Language.Qux.Syntax
 

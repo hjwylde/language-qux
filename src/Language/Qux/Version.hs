@@ -12,7 +12,7 @@ Haskell constants of the language version.
 
 module Language.Qux.Version where
 
-import Data.List
+import Data.List (intercalate)
 
 
 -- * Version
