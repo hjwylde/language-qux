@@ -17,8 +17,8 @@ import Data.List (intercalate)
 
 -- * Version
 
--- | The version formatted as "major.minor.patch.release".
-version = intercalate "." (map show [major, minor, patch, release])
+-- | The version formatted as "major.minor.patch".
+version = intercalate "." (map show [major, minor, patch])
 
 
 -- ** Components
@@ -31,7 +31,4 @@ minor = 0
 
 -- | The patch component.
 patch = 0
-
--- | The release component.
-release = 0
 
