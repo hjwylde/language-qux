@@ -27,7 +27,7 @@ version = intercalate "." (map show [major, minor, patch])
 major = 0
 
 -- | The minor component.
-minor = 0
+minor = 1
 
 -- | The patch component.
 patch = 0
