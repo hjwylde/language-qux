@@ -29,7 +29,8 @@ library
         Language.Qux.Syntax,
         Language.Qux.Version
     other-modules:
-        Language.Qux.Lexer
+        Language.Qux.Lexer,
+        Paths_language_qux
 
     default-language: Haskell2010
     build-depends:
