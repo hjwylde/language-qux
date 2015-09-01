@@ -39,7 +39,7 @@ import Data.Function (on)
 import Data.List ((\\), nubBy)
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
-import Data.Maybe
+import Data.Maybe (fromJust, isNothing)
 
 import Language.Qux.Annotated.Exception
 import Language.Qux.Annotated.Parser (SourcePos)
