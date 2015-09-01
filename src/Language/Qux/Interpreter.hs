@@ -38,6 +38,7 @@ import Control.Monad.Trans.Either
 import Data.List ((\\))
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
+import Data.Maybe (fromJust, isJust)
 
 import Language.Qux.Syntax
 
@@ -114,9 +115,14 @@ evalExpr (ValueExpr value)                = return value
 
 evalApplicationExpr :: Id -> [Value] -> Evaluation Value
 evalApplicationExpr name arguments = do
-    (parameters, stmts) <- asks $ (! name) . functions
+    maybeValue <- gets $ Map.lookup name
 
-    once (Map.union $ Map.fromList (zip parameters arguments)) (runExecution undefined (execBlock stmts))
+    if isJust maybeValue then
+        return $ fromJust maybeValue
+    else do
+        (parameters, stmts) <- asks $ (! name) . functions
+
+        once (Map.union $ Map.fromList (zip parameters arguments)) (runExecution undefined (execBlock stmts))
 
 evalBinaryExpr :: BinaryOp -> Value -> Value -> Evaluation Value
 evalBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)
