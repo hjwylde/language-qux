@@ -30,5 +30,5 @@ major = 0
 minor = 1
 
 -- | The patch component.
-patch = 0
+patch = 1
 
