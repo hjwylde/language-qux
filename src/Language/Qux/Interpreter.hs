@@ -31,7 +31,6 @@ module Language.Qux.Interpreter (
     evalExpr
 ) where
 
-import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Either
