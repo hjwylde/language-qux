@@ -22,7 +22,6 @@ module Language.Qux.Annotated.Parser (
     program, decl, stmt, expr, value, type_
 ) where
 
-import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Trans.Except
 

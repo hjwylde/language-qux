@@ -36,7 +36,7 @@ library
 
     default-language: Haskell2010
     build-depends:
-        base >= 4.7 && < 5,
+        base >= 4.8 && < 5,
         containers == 0.5.*,
         either == 4.*,
         indents >= 0.3.3 && < 0.4,
