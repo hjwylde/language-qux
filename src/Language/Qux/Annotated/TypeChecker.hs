@@ -16,10 +16,12 @@ They don't verify other properties such as definite assignment.
 module Language.Qux.Annotated.TypeChecker (
     -- * Environment
     Evaluation, Check,
+    runCheck,
 
     -- * Contexts
-    Context, Locals,
-    context,
+    Context,
+    context, emptyContext,
+    Locals,
 
     -- * Type checking
 
@@ -52,25 +54,6 @@ import Language.Qux.Syntax
 --      (@Locals@).
 type Evaluation = StateT Locals (Reader Context)
 
--- |    Either a 'TypeException' or an @a@.
---      Contains an underlying 'Evaluation' in the monad transformer.
-type Check = ExceptT TypeException Evaluation
-
-
--- |    Global context that holds function definition types.
---      The function name and parameter types are held.
-data Context = Context {
-    functions :: Map Id [Type]
-    }
-
--- | Local context.
-type Locals = Map Id Type
-
-
--- | Returns a context for the given program.
-context :: Program -> Context
-context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name d, types d)) decls }
-
 retrieve :: Id -> Evaluation (Maybe [Type])
 retrieve name = do
     maybeLocal  <- gets $ (fmap (:[])) . (Map.lookup name)
@@ -82,16 +65,39 @@ once :: Monad m => MonadState s m => (s -> s) -> m a -> m a
 once f m = get >>= \save -> modify f >> m <* put save
 
 
+-- |    Either a 'TypeException' or an @a@.
+--      Contains an underlying 'Evaluation' in the monad transformer.
+type Check = ExceptT TypeException Evaluation
+
+-- | Runs the given check with the context and initial locals.
+runCheck :: Check a -> Context -> Locals -> Except TypeException a
+runCheck check context locals = mapExceptT (return . flip runReader context . flip evalStateT locals) check
+
+
+-- |    Global context that holds function definition types.
+--      The function name and parameter types are held.
+data Context = Context {
+    functions :: Map Id [Type]
+    }
+
+-- | Returns a context for the given program.
+context :: Program -> Context
+context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name d, types d)) decls }
+
+-- | An empty context.
+emptyContext :: Context
+emptyContext = Context { functions = Map.empty }
+
+-- | Local context.
+type Locals = Map Id Type
+
+
 -- |    Type checks the program.
 --      If an exception occurs then the result will be a 'TypeException', otherwise 'Nothing'.
 --      This function wraps 'checkProgram' by building and evaluating the environment under
 --      the hood.
 check :: Ann.Program SourcePos -> Except TypeException ()
-check program = mapExceptT
-    (return
-        . flip runReader (context $ sProgram program)
-        . flip evalStateT Map.empty)
-    (checkProgram program)
+check program = runCheck (checkProgram program) (context $ sProgram program) Map.empty
 
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
@@ -166,11 +172,19 @@ checkExpr (Ann.ValueExpr _ value)                       = checkValue value
 checkValue :: Value -> Check Type
 checkValue (BoolValue _)        = return BoolType
 checkValue (IntValue _)         = return IntType
+checkValue (ListValue [])       = return $ ListType undefined
+checkValue (ListValue elements) = do
+    expected <- checkValue $ head elements
+
+    mapM_ (flip expectValue [expected]) (tail elements) >> return expected
 checkValue NilValue             = return NilType
 
 
 expectExpr :: Ann.Expr SourcePos -> [Type] -> Check Type
 expectExpr expr expects = (attach (Ann.ann expr) <$> checkExpr expr) >>= flip expectType expects
+
+expectValue :: Value -> [Type] -> Check Type
+expectValue value expects = (attach undefined <$> checkValue value) >>= flip expectType expects
 
 expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects

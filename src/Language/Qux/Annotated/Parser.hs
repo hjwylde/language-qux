@@ -151,6 +151,7 @@ value = choice [
     BoolValue False <$  reserved "false",
     BoolValue True  <$  reserved "true",
     IntValue        <$> natural,
+    ListValue       <$> brackets (value `sepEndBy` comma),
     NilValue        <$  reserved "nil"
     ] <?> "value"
 
