@@ -163,7 +163,9 @@ checkExpr (Ann.ListExpr _ [])                           = return $ ListType unde
 checkExpr (Ann.ListExpr _ elements)                     = do
     expected <- checkExpr $ head elements
 
-    mapM_ (flip expectExpr [expected]) (tail elements) >> return expected
+    mapM_ (flip expectExpr [expected]) (tail elements)
+
+    return $ ListType expected
 checkExpr (Ann.UnaryExpr _ op expr)
     | op `elem` [Len]               = expectExpr expr [ListType undefined] >> return IntType
     | op `elem` [Neg]               = expectExpr expr [IntType]
@@ -178,7 +180,9 @@ checkValue (ListValue [])       = return $ ListType undefined
 checkValue (ListValue elements) = do
     expected <- checkValue $ head elements
 
-    mapM_ (flip expectValue [expected]) (tail elements) >> return expected
+    mapM_ (flip expectValue [expected]) (tail elements)
+
+    return $ ListType expected
 checkValue NilValue             = return NilType
 
 
