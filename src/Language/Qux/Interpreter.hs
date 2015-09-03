@@ -125,30 +125,33 @@ evalApplicationExpr name arguments = do
         once (Map.union $ Map.fromList (zip parameters arguments)) (runExecution undefined (execBlock stmts))
 
 evalBinaryExpr :: BinaryOp -> Value -> Value -> Evaluation Value
-evalBinaryExpr Acc (ListValue elements) (IntValue rhs)    = return $ elements !! (fromInteger rhs)
-evalBinaryExpr Mul (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs * rhs)
-evalBinaryExpr Div (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs `div` rhs)
-evalBinaryExpr Mod (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs `mod` rhs)
-evalBinaryExpr Add (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs + rhs)
-evalBinaryExpr Add (ListValue lhs) (ListValue rhs)        = return $ ListValue  (lhs ++ rhs)
-evalBinaryExpr Sub (IntValue lhs)  (IntValue rhs)         = return $ IntValue   (lhs - rhs)
-evalBinaryExpr Sub (ListValue lhs) (ListValue rhs)        = return $ ListValue  (lhs \\ rhs)
-evalBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs < rhs)
-evalBinaryExpr Lte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs <= rhs)
-evalBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs > rhs)
-evalBinaryExpr Gte (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs >= rhs)
-evalBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)        = return $ BoolValue  (lhs == rhs)
-evalBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)         = return $ BoolValue  (lhs == rhs)
-evalBinaryExpr Eq  (ListValue lhs) (ListValue rhs)        = return $ BoolValue  (lhs == rhs)
-evalBinaryExpr Eq  NilValue        NilValue               = return $ BoolValue  True
-evalBinaryExpr Eq  _               _                      = return $ BoolValue  False
-evalBinaryExpr Neq lhs             rhs                    = evalBinaryExpr Eq lhs rhs >>= return . BoolValue . not . runBoolValue
+evalBinaryExpr Acc (ListValue elements) (IntValue rhs)  = return $ elements !! (fromInteger rhs)
+evalBinaryExpr Mul (IntValue lhs)  (IntValue rhs)       = return $ IntValue   (lhs * rhs)
+evalBinaryExpr Div (IntValue lhs)  (IntValue rhs)       = return $ IntValue   (lhs `div` rhs)
+evalBinaryExpr Mod (IntValue lhs)  (IntValue rhs)       = return $ IntValue   (lhs `mod` rhs)
+evalBinaryExpr Add (IntValue lhs)  (IntValue rhs)       = return $ IntValue   (lhs + rhs)
+evalBinaryExpr Add (ListValue lhs) (ListValue rhs)      = return $ ListValue  (lhs ++ rhs)
+evalBinaryExpr Sub (IntValue lhs)  (IntValue rhs)       = return $ IntValue   (lhs - rhs)
+evalBinaryExpr Sub (ListValue lhs) (ListValue rhs)      = return $ ListValue  (lhs \\ rhs)
+evalBinaryExpr Lt  (IntValue lhs)  (IntValue rhs)       = return $ BoolValue  (lhs < rhs)
+evalBinaryExpr Lte (IntValue lhs)  (IntValue rhs)       = return $ BoolValue  (lhs <= rhs)
+evalBinaryExpr Gt  (IntValue lhs)  (IntValue rhs)       = return $ BoolValue  (lhs > rhs)
+evalBinaryExpr Gte (IntValue lhs)  (IntValue rhs)       = return $ BoolValue  (lhs >= rhs)
+evalBinaryExpr Eq  (BoolValue lhs) (BoolValue rhs)      = return $ BoolValue  (lhs == rhs)
+evalBinaryExpr Eq  (IntValue lhs)  (IntValue rhs)       = return $ BoolValue  (lhs == rhs)
+evalBinaryExpr Eq  (ListValue lhs) (ListValue rhs)      = return $ BoolValue  (lhs == rhs)
+evalBinaryExpr Eq  NilValue        NilValue             = return $ BoolValue  True
+evalBinaryExpr Eq  _               _                    = return $ BoolValue  False
+evalBinaryExpr Neq lhs             rhs                  = evalBinaryExpr Eq lhs rhs >>= return . BoolValue . not . runBoolValue
+evalBinaryExpr _ _ _                                    = error "malformed program"
 
 evalUnaryExpr :: UnaryOp -> Value -> Evaluation Value
 evalUnaryExpr Len (ListValue elements)  = return $ IntValue (toInteger $ length elements)
 evalUnaryExpr Neg (IntValue value)      = return $ IntValue (-value)
+evalUnaryExpr _ _                       = error "malformed program"
 
 
 runBoolValue :: Value -> Bool
-runBoolValue (BoolValue value) = value
+runBoolValue (BoolValue value)  = value
+runBoolValue _                  = error "malformed program"
 

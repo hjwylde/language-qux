@@ -20,7 +20,7 @@ module Language.Qux.Annotated.Syntax (
     Id(..), Program(..),
 
     Decl(..),
-    name, parameters, parameterNames, parameterTypes, returnType, stmts,
+    name, types, parameters, parameterNames, parameterTypes, returnType, stmts,
 
     Stmt(..), Expr(..), Type(..),
 

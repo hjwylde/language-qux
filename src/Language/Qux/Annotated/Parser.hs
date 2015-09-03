@@ -63,7 +63,7 @@ decl :: Parser (Decl SourcePos)
 decl = do
     pos <- getPosition
     name <- id_
-    symbol "::"
+    symbol_ "::"
     parameters <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
     returnType <- type_
     colon

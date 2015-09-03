@@ -87,6 +87,7 @@ instance Pretty BinaryOp where
     pPrint Neq = text "!="
 
 instance Pretty UnaryOp where
+    pPrint Len = text "length"
     pPrint Neg = text "-"
 
 instance Pretty Value where
@@ -105,7 +106,9 @@ instance Pretty Type where
 block :: [Stmt] -> Doc
 block = vcat . (map pPrint)
 
+emptyLine :: Doc
 emptyLine = text ""
 
+pipes :: Doc -> Doc
 pipes doc = char '|' <> doc <> char '|'
 

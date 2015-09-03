@@ -110,7 +110,7 @@ checkProgram (Ann.Program _ decls) = do
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
-checkDecl (Ann.FunctionDecl pos name parameters stmts) = do
+checkDecl (Ann.FunctionDecl _ _ parameters stmts) = do
     when (not $ null duplicates) (throwError $ duplicateParameterName (head $ map snd duplicates))
 
     once (Map.union $ Map.fromList (map (\(t, p) -> (sId p, sType t)) parameters)) (checkBlock stmts)
@@ -123,7 +123,7 @@ checkBlock = mapM_ checkStmt
 -- -- | Type checks a statement.
 checkStmt :: Ann.Stmt SourcePos -> Check ()
 checkStmt (Ann.IfStmt _ condition trueStmts falseStmts)   = do
-    expectExpr condition [BoolType]
+    expectExpr_ condition [BoolType]
 
     checkBlock trueStmts
     checkBlock falseStmts
@@ -132,20 +132,20 @@ checkStmt (Ann.ReturnStmt _ expr)                         = do
 
     void $ expectExpr expr [expected]
 checkStmt (Ann.WhileStmt _ condition stmts)               = do
-    expectExpr condition [BoolType]
+    expectExpr_ condition [BoolType]
 
     checkBlock stmts
 
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> Check Type
-checkExpr e@(Ann.ApplicationExpr pos name arguments)    = do
+checkExpr e@(Ann.ApplicationExpr _ name arguments)      = do
     maybeTypes <- lift $ retrieve (sId name)
     when (isNothing maybeTypes) (throwError $ undefinedFunctionCall e)
 
     let expected = init $ fromJust maybeTypes
 
     case length expected == length arguments of
-        True    -> zipWithM expectExpr arguments $ map (:[]) expected
+        True    -> zipWithM_ expectExpr arguments $ map (:[]) expected
         False   -> throwError $ invalidArgumentsCount e (length expected)
 
     return $ last (fromJust maybeTypes)
@@ -158,6 +158,7 @@ checkExpr (Ann.BinaryExpr _ op lhs rhs)
     | op `elem` [Add, Sub]          = expectExpr lhs [IntType, ListType undefined] >>= (expectExpr rhs) . (:[])
     | op `elem` [Lt, Lte, Gt, Gte]  = expectExpr lhs [IntType] >> expectExpr rhs [IntType] >> return BoolType
     | op `elem` [Eq, Neq]           = ((:[]) <$> checkExpr lhs >>= expectExpr rhs) >> return BoolType
+    | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.ListExpr _ [])                           = return $ ListType undefined
 checkExpr (Ann.ListExpr _ elements)                     = do
     expected <- checkExpr $ head elements
@@ -166,6 +167,7 @@ checkExpr (Ann.ListExpr _ elements)                     = do
 checkExpr (Ann.UnaryExpr _ op expr)
     | op `elem` [Len]               = expectExpr expr [ListType undefined] >> return IntType
     | op `elem` [Neg]               = expectExpr expr [IntType]
+    | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.ValueExpr _ value)                       = checkValue value
 
 -- -- | Type checks a value.
@@ -182,6 +184,9 @@ checkValue NilValue             = return NilType
 
 expectExpr :: Ann.Expr SourcePos -> [Type] -> Check Type
 expectExpr expr expects = (attach (Ann.ann expr) <$> checkExpr expr) >>= flip expectType expects
+
+expectExpr_ :: Ann.Expr SourcePos -> [Type] -> Check ()
+expectExpr_ = fmap void . expectExpr
 
 expectValue :: Value -> [Type] -> Check Type
 expectValue value expects = (attach undefined <$> checkValue value) >>= flip expectType expects
