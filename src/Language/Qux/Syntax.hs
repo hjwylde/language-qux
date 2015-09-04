@@ -57,7 +57,7 @@ data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false b
 data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name to call and the arguments to pass.
             | BinaryExpr BinaryOp Expr Expr -- ^ A binary operation.
             | ListExpr [Expr]               -- ^ A list of expressions.
-            | UnaryExpr UnaryOp Expr        -- ^ A unary oepration.
+            | UnaryExpr UnaryOp Expr        -- ^ A unary operation.
             | ValueExpr Value               -- ^ A raw value.
     deriving (Eq, Show)
 

@@ -50,28 +50,16 @@ import qualified Language.Qux.Annotated.Syntax as Ann
 import Language.Qux.Syntax
 
 
--- |    An environment that holds the global types (@Reader Context@) and the local types
---      (@Locals@).
-type Evaluation = StateT Locals (Reader Context)
-
-retrieve :: Id -> Evaluation (Maybe [Type])
-retrieve name = do
-    maybeLocal  <- gets $ (fmap (:[])) . (Map.lookup name)
-    maybeDef    <- asks $ (Map.lookup name) . functions
-
-    return $ maybeLocal <|> maybeDef
-
-once :: Monad m => MonadState s m => (s -> s) -> m a -> m a
-once f m = get >>= \save -> modify f >> m <* put save
-
+-- |    An environment that holds the global types (@Reader Context@).
+type Evaluation = Reader Context
 
 -- |    Either a 'TypeException' or an @a@.
 --      Contains an underlying 'Evaluation' in the monad transformer.
 type Check = ExceptT TypeException Evaluation
 
--- | Runs the given check with the context and initial locals.
-runCheck :: Check a -> Context -> Locals -> Except TypeException a
-runCheck check context locals = mapExceptT (return . flip runReader context . flip evalStateT locals) check
+-- | Runs the given check with the context.
+runCheck :: Check a -> Context -> Except TypeException a
+runCheck check context = mapExceptT (return . flip runReader context) check
 
 
 -- |    Global context that holds function definition types.
@@ -91,13 +79,20 @@ emptyContext = Context { functions = Map.empty }
 -- | Local context.
 type Locals = Map Id Type
 
+retrieve :: Id -> StateT Locals Check (Maybe [Type])
+retrieve name = do
+    maybeLocal  <- gets $ (fmap (:[])) . (Map.lookup name)
+    maybeDef    <- asks $ (Map.lookup name) . functions
+
+    return $ maybeLocal <|> maybeDef
+
 
 -- |    Type checks the program.
 --      If an exception occurs then the result will be a 'TypeException', otherwise 'Nothing'.
 --      This function wraps 'checkProgram' by building and evaluating the environment under
 --      the hood.
 check :: Ann.Program SourcePos -> Except TypeException ()
-check program = runCheck (checkProgram program) (context $ sProgram program) Map.empty
+check program = runCheck (checkProgram program) (context $ sProgram program)
 
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
@@ -113,15 +108,15 @@ checkDecl :: Ann.Decl SourcePos -> Check ()
 checkDecl (Ann.FunctionDecl _ _ parameters stmts) = do
     when (not $ null duplicates) (throwError $ duplicateParameterName (head $ map snd duplicates))
 
-    once (Map.union $ Map.fromList (map (\(t, p) -> (sId p, sType t)) parameters)) (checkBlock stmts)
+    evalStateT (checkBlock stmts) (Map.fromList (map (\(t, p) -> (sId p, sType t)) parameters))
     where
         duplicates = parameters \\ nubBy ((==) `on` sId . snd) parameters
 
-checkBlock :: [Ann.Stmt SourcePos] -> Check ()
+checkBlock :: [Ann.Stmt SourcePos] -> StateT Locals Check ()
 checkBlock = mapM_ checkStmt
 
 -- -- | Type checks a statement.
-checkStmt :: Ann.Stmt SourcePos -> Check ()
+checkStmt :: Ann.Stmt SourcePos -> StateT Locals Check ()
 checkStmt (Ann.IfStmt _ condition trueStmts falseStmts)   = do
     expectExpr_ condition [BoolType]
 
@@ -137,9 +132,9 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
     checkBlock stmts
 
 -- | Type checks an expression.
-checkExpr :: Ann.Expr SourcePos -> Check Type
+checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
 checkExpr e@(Ann.ApplicationExpr _ name arguments)      = do
-    maybeTypes <- lift $ retrieve (sId name)
+    maybeTypes <- retrieve (sId name)
     when (isNothing maybeTypes) (throwError $ undefinedFunctionCall e)
 
     let expected = init $ fromJust maybeTypes
@@ -151,9 +146,9 @@ checkExpr e@(Ann.ApplicationExpr _ name arguments)      = do
     return $ last (fromJust maybeTypes)
 checkExpr (Ann.BinaryExpr _ op lhs rhs)
     | op `elem` [Acc]               = do
-    list <- expectExpr lhs [ListType undefined]
-    let (ListType inner) = list in
-        expectExpr rhs [IntType] >> return inner
+        list <- expectExpr lhs [ListType undefined]
+        let (ListType inner) = list in
+            expectExpr rhs [IntType] >> return inner
     | op `elem` [Mul, Div, Mod]     = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
     | op `elem` [Add, Sub]          = expectExpr lhs [IntType, ListType undefined] >>= (expectExpr rhs) . (:[])
     | op `elem` [Lt, Lte, Gt, Gte]  = expectExpr lhs [IntType] >> expectExpr rhs [IntType] >> return BoolType
@@ -170,7 +165,7 @@ checkExpr (Ann.UnaryExpr _ op expr)
     | op `elem` [Len]               = expectExpr expr [ListType undefined] >> return IntType
     | op `elem` [Neg]               = expectExpr expr [IntType]
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
-checkExpr (Ann.ValueExpr _ value)                       = checkValue value
+checkExpr (Ann.ValueExpr _ value)                       = lift $ checkValue value
 
 -- -- | Type checks a value.
 checkValue :: Value -> Check Type
@@ -186,10 +181,13 @@ checkValue (ListValue elements) = do
 checkValue NilValue             = return NilType
 
 
-expectExpr :: Ann.Expr SourcePos -> [Type] -> Check Type
-expectExpr expr expects = (attach (Ann.ann expr) <$> checkExpr expr) >>= flip expectType expects
+expectExpr :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check Type
+expectExpr expr expects = do
+    type_ <- (attach (Ann.ann expr) <$> checkExpr expr)
 
-expectExpr_ :: Ann.Expr SourcePos -> [Type] -> Check ()
+    lift $ expectType type_ expects
+
+expectExpr_ :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check ()
 expectExpr_ = fmap void . expectExpr
 
 expectValue :: Value -> [Type] -> Check Type

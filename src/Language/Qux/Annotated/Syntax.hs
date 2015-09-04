@@ -93,7 +93,7 @@ instance Annotated Stmt where
 data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name to call and the arguments to pass.
             | BinaryExpr a BinaryOp (Expr a) (Expr a)   -- ^ A binary operation.
             | ListExpr a [Expr a]                       -- ^ A list of expressions.
-            | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary oepration.
+            | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
             | ValueExpr a Value                         -- ^ A raw value.
     deriving (Eq, Show)
 
