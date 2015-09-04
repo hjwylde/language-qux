@@ -14,9 +14,9 @@ They don't verify other properties such as definite assignment.
 -}
 
 module Language.Qux.Annotated.TypeChecker (
-    -- * Environment
-    Evaluation, Check,
-    runCheck,
+    -- * Check
+    Check,
+    runCheck, execCheck,
 
     -- * Contexts
     Context,
@@ -33,9 +33,9 @@ module Language.Qux.Annotated.TypeChecker (
 ) where
 
 import Control.Applicative
-import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
+import Control.Monad.Writer
 
 import Data.Function (on)
 import Data.List ((\\), nubBy)
@@ -50,16 +50,16 @@ import qualified Language.Qux.Annotated.Syntax as Ann
 import Language.Qux.Syntax
 
 
--- |    An environment that holds the global types (@Reader Context@).
-type Evaluation = Reader Context
-
--- |    Either a 'TypeException' or an @a@.
---      Contains an underlying 'Evaluation' in the monad transformer.
-type Check = ExceptT TypeException Evaluation
+-- |    A type that allows collecting errors while type checking a program.
+--      Requires a 'Context' for evaluation.
+type Check = ReaderT Context (Writer [TypeException])
 
 -- | Runs the given check with the context.
-runCheck :: Check a -> Context -> Except TypeException a
-runCheck check context = mapExceptT (return . flip runReader context) check
+runCheck :: Check a -> Context -> (a, [TypeException])
+runCheck check context = runWriter $ runReaderT check context
+
+execCheck :: Check a -> Context -> [TypeException]
+execCheck check context = execWriter $ runReaderT check context
 
 
 -- |    Global context that holds function definition types.
@@ -87,28 +87,24 @@ retrieve name = do
     return $ maybeLocal <|> maybeDef
 
 
--- |    Type checks the program.
---      If an exception occurs then the result will be a 'TypeException', otherwise 'Nothing'.
---      This function wraps 'checkProgram' by building and evaluating the environment under
---      the hood.
-check :: Ann.Program SourcePos -> Except TypeException ()
-check program = runCheck (checkProgram program) (context $ sProgram program)
+-- |    Type checks the program, returning any errors that are found.
+--      An result of @[]@ indicates the program is well-typed.
+check :: Ann.Program SourcePos -> [TypeException]
+check program = execCheck (checkProgram program) (context $ sProgram program)
 
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
-checkProgram (Ann.Program _ decls) = do
-    when (not $ null duplicates) (throwError $ duplicateFunctionName (head duplicates))
-
-    mapM_ checkDecl decls
+checkProgram (Ann.Program _ decls)
+    | null duplicates   = mapM_ checkDecl decls
+    | otherwise         = tell $ map duplicateFunctionName duplicates
     where
         duplicates = decls \\ nubBy ((==) `on` sId . Ann.name) decls
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
-checkDecl (Ann.FunctionDecl _ _ parameters stmts) = do
-    when (not $ null duplicates) (throwError $ duplicateParameterName (head $ map snd duplicates))
-
-    evalStateT (checkBlock stmts) (Map.fromList (map (\(t, p) -> (sId p, sType t)) parameters))
+checkDecl (Ann.FunctionDecl _ _ parameters stmts)
+    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList (map (\(t, p) -> (sId p, sType t)) parameters))
+    | otherwise         = tell $ map (duplicateParameterName . snd) duplicates
     where
         duplicates = parameters \\ nubBy ((==) `on` sId . snd) parameters
 
@@ -133,17 +129,16 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
-checkExpr e@(Ann.ApplicationExpr _ name arguments)      = do
-    maybeTypes <- retrieve (sId name)
-    when (isNothing maybeTypes) (throwError $ undefinedFunctionCall e)
+checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (sId name) >>= maybe
+    (tell [undefinedFunctionCall e] >> return undefined)
+    (\types -> do
+        let expected = init types
 
-    let expected = init $ fromJust maybeTypes
+        zipWithM_ expectExpr arguments $ map (:[]) expected
 
-    case length expected == length arguments of
-        True    -> zipWithM_ expectExpr arguments $ map (:[]) expected
-        False   -> throwError $ invalidArgumentsCount e (length expected)
+        when (length expected /= length arguments) $ tell [invalidArgumentsCount e (length expected)]
 
-    return $ last (fromJust maybeTypes)
+        return $ last types)
 checkExpr (Ann.BinaryExpr _ op lhs rhs)
     | op `elem` [Acc]               = do
         list <- expectExpr lhs [ListType undefined]
@@ -196,7 +191,7 @@ expectValue value expects = (attach undefined <$> checkValue value) >>= flip exp
 expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects
     | sType received `elem` expects = return $ sType received
-    | otherwise                     = throwError $ mismatchedType received expects
+    | otherwise                     = tell [mismatchedType received expects] >> return (sType received)
 
 attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos BoolType         = Ann.BoolType pos

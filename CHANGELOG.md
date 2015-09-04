@@ -3,6 +3,7 @@
 #### Upcoming in master
 
 * Added list value parsing and type checking.
+* Rewrote type checker to return a list of errors.
 
 #### v0.1.1.2
 
