@@ -5,6 +5,10 @@
 * Added list value parsing and type checking.
 * Rewrote type checker to return a list of errors.
 
+#### v0.1.1.3
+
+* Bumped the minimum version of base to 4.8.
+
 #### v0.1.1.2
 
 * Added the Control.Applicative import to files as base 4.7 doesn't import the required operators in
@@ -12,7 +16,7 @@
 
 #### v0.1.1.1
 
-* Bumped minimum version of pretty to 1.1.2.
+* Bumped the minimum version of pretty to 1.1.2.
 
 #### v0.1.1.0
 
