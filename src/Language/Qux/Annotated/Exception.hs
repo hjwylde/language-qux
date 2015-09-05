@@ -13,6 +13,7 @@ Exceptions and utility creation functions.
 module Language.Qux.Annotated.Exception (
     -- * Type exceptions
     TypeException,
+    pos, message,
 
     -- ** Creation functions
     duplicateFunctionName, duplicateParameterName, invalidArgumentsCount, mismatchedType,
@@ -34,6 +35,14 @@ data TypeException = TypeException SourcePos String
 
 instance Show TypeException where
     show (TypeException pos message) = show pos ++ ":\n" ++ message
+
+-- | Extracts the source position from the exception.
+pos :: TypeException -> SourcePos
+pos (TypeException p _) = p
+
+-- | Extracts the message from the exception.
+message :: TypeException -> String
+message (TypeException _ m) = m
 
 
 -- |    @duplciateFunctionName decl@ creates a 'TypeException' indicating that a duplicate function
