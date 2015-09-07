@@ -14,18 +14,23 @@ That is, it must be well-typed (see "Language.Qux.TypeChecker").
 -}
 
 module Language.Qux.Interpreter (
-    -- * Environment
-    Execution, Evaluation,
+    -- * Environments
+    Execution,
     runExecution,
+    Evaluation,
+    runEvaluation,
 
-    -- * Contexts
-    Context, Locals,
-    context,
+    -- * Global context
+    Context,
+    context, emptyContext,
+
+    -- * Local context
+    Locals,
 
     -- * Interpreter
 
     -- ** Program  execution
-    exec, execStmt,
+    exec, execBlock, execStmt,
 
     -- ** Expression evaluation
     evalExpr
@@ -48,15 +53,19 @@ import Language.Qux.Syntax
 --      It supports breaking out of execution (via 'EitherT Value').
 type Execution = EitherT Value Evaluation
 
+-- |    Runs the execution, returning the left result if present otherwise converting @a@ with the
+--      given function.
+runExecution :: Execution a -> (a -> Value) -> Evaluation Value
+runExecution exec f = either id f <$> runEitherT exec
+
 -- |    An environment that holds the global state (@Reader Context@) and the local state
 --      (@Locals@).
 --      Purely for evaluation of expressions---this environment does not support breaking out of
 --      execution.
 type Evaluation = StateT Locals (Reader Context)
 
-
-runExecution :: (a -> Value) -> Execution a -> Evaluation Value
-runExecution f exec = either id f <$> runEitherT exec
+runEvaluation :: Evaluation a -> Context -> Locals -> a
+runEvaluation eval context locals = runReader (evalStateT eval locals) context
 
 
 -- |    Global context that holds function definitions.
@@ -65,16 +74,16 @@ data Context = Context {
     functions :: Map Id ([Id], [Stmt])
     }
 
--- | Local context.
-type Locals = Map Id Value
-
-
 -- | Returns a context for the given program.
 context :: Program -> Context
 context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name d, (parameterNames d, stmts d))) decls }
 
-once :: Monad m => MonadState s m => (s -> s) -> m a -> m a
-once f m = get >>= \save -> modify f >> m <* put save
+-- | An empty context.
+emptyContext :: Context
+emptyContext = Context { functions = Map.empty }
+
+-- | Local context.
+type Locals = Map Id Value
 
 
 -- |    @exec program entry arguments@ executes @entry@ (passing it @arguments@) in the context
@@ -82,7 +91,7 @@ once f m = get >>= \save -> modify f >> m <* put save
 --      This function wraps 'execFunction' by building and evaluating the environment under
 --      the hood.
 exec :: Program -> Id -> [Value] -> Value
-exec program entry arguments = runReader (evalStateT (evalApplicationExpr entry arguments) Map.empty) (context program)
+exec program entry arguments = runEvaluation (evalApplicationExpr entry arguments) (context program) Map.empty
 
 execBlock :: [Stmt] -> Execution ()
 execBlock = mapM_ execStmt
@@ -92,9 +101,7 @@ execStmt :: Stmt -> Execution ()
 execStmt (IfStmt condition trueStmts falseStmts) = do
     result <- lift $ evalExpr condition
 
-    execBlock $ case runBoolValue result of
-        True    -> trueStmts
-        False   -> falseStmts
+    execBlock $ if runBoolValue result then trueStmts else falseStmts
 execStmt (ReturnStmt expr)                       = lift (evalExpr expr) >>= left
 execStmt s@(WhileStmt condition stmts)           = do
     result <- lift $ evalExpr condition
@@ -118,11 +125,11 @@ evalApplicationExpr name arguments = do
     maybeValue <- gets $ Map.lookup name
 
     if isJust maybeValue then
-        return $ fromJust maybeValue
+        when (not $ null arguments) (error "malformed program") >> return $ fromJust maybeValue
     else do
         (parameters, stmts) <- asks $ (! name) . functions
 
-        once (Map.union $ Map.fromList (zip parameters arguments)) (runExecution undefined (execBlock stmts))
+        lift $ evalStateT (runExecution (execBlock stmts) undefined) (Map.fromList $ zip parameters arguments)
 
 evalBinaryExpr :: BinaryOp -> Value -> Value -> Evaluation Value
 evalBinaryExpr Acc (ListValue elements) (IntValue rhs)  = return $ elements !! (fromInteger rhs)
