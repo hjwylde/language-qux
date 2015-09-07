@@ -13,7 +13,7 @@ To render a program, call: @render $ pPrint program@
 -}
 
 module Language.Qux.Annotated.PrettyPrinter (
-    -- Types
+    -- * Types
     Pretty(..), Style(..), Mode(..),
 
     -- * Rendering

@@ -11,6 +11,7 @@ Haskell constant of the language version.
 -}
 
 module Language.Qux.Version (
+    -- * Version
     version
 ) where
 

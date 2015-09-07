@@ -11,15 +11,16 @@ A "Text.Parsec" indentation-based parser for generating a 'Program'.
 -}
 
 module Language.Qux.Annotated.Parser (
-    -- * Types
-    Parser, ParseError, SourcePos,
-    sourceName, sourceLine, sourceColumn,
-
-    -- ** Parsing
+    -- * Parser type
+    Parser, ParseError,
     parse,
 
-    -- ** Parsers
-    program, decl, stmt, expr, value, type_
+    -- * Source position type
+    SourcePos,
+    sourceName, sourceLine, sourceColumn,
+
+    -- * Parsers
+    id_, program, decl, stmt, expr, value, type_
 ) where
 
 import Control.Monad.State
@@ -35,7 +36,6 @@ import Text.Parsec.Indent
 
 -- | A 'ParsecT' that retains indentation information.
 type Parser a = ParsecT String () (State SourcePos) a
-
 
 -- |    @parse parser sourceName input@ parses @input@ using @parser@.
 --      Returns either a 'ParseError' or @a@.

@@ -11,7 +11,7 @@ Exceptions and utility creation functions.
 -}
 
 module Language.Qux.Annotated.Exception (
-    -- * Type exceptions
+    -- * Type exception
     TypeException,
     pos, message,
 
@@ -30,7 +30,7 @@ import Language.Qux.Syntax
 import Text.PrettyPrint (doubleQuotes)
 
 
--- | An exception that occurs during type checking. See "Language.Qux.TypeChecker".
+-- | An exception that occurs during type checking. See "Language.Qux.Annotated.TypeChecker".
 data TypeException = TypeException SourcePos String
 
 instance Show TypeException where
@@ -56,7 +56,7 @@ duplicateParameterName :: Ann.Id SourcePos -> TypeException
 duplicateParameterName (Ann.Id pos name) = TypeException pos ("duplicate parameter name \"" ++ name ++ "\"")
 --
 -- |    @invalidArgumentsCount received expected@ creates a 'TypeException' indicating that an
---      application call (@received@) with an invalid number of arguments was passed to a function
+--      application call (@received@) with an invalid number of arguments was made to a function
 --      expecting @expected@.
 invalidArgumentsCount :: Ann.Expr SourcePos -> Int -> TypeException
 invalidArgumentsCount (Ann.ApplicationExpr pos _ arguments) expected = TypeException pos $ intercalate " " [
@@ -72,10 +72,11 @@ mismatchedType received expects = TypeException (Ann.ann received) $ intercalate
     "\nexpecting", sentence "or" (map (renderOneLine . doubleQuotes . pPrint) expects)
     ]
 
--- | @undefinedFunctionCall app@ creates a 'TypeException' indicating that an application call
--- (@app@) was made to an undefined function.
+-- |    @undefinedFunctionCall app@ creates a 'TypeException' indicating that an application call
+--      (@app@) was made to an undefined function.
 undefinedFunctionCall :: Ann.Expr SourcePos -> TypeException
 undefinedFunctionCall (Ann.ApplicationExpr pos (Ann.Id _ name) _) = TypeException pos ("call to undefined function \"" ++ name ++ "\"")
+
 
 sentence :: String -> [String] -> String
 sentence _ [x]  = x

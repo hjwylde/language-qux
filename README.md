@@ -34,6 +34,6 @@ There are a few core tasks in mind that need to be achieved before v1 can come a
     [quux language](https://github.com/qux-lang/language-quux "quux")).
 * Compilation to LLVM.
 
-Of course, there will be minor tasks to acompany this release, such as documentation on the language features.
+Of course, there will be minor tasks to accompany this release, such as documentation on the language features.
 The above merely mark the core functionality required!
 

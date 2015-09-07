@@ -16,7 +16,7 @@ module Language.Qux.Annotated.Syntax (
     -- * Type class
     Annotated(..),
 
-    -- ** Annotated nodes
+    -- * Annotated nodes
     Id(..), Program(..),
 
     Decl(..),
@@ -24,7 +24,7 @@ module Language.Qux.Annotated.Syntax (
 
     Stmt(..), Expr(..), Type(..),
 
-    -- ** Regular nodes
+    -- * Regular nodes
     BinaryOp(..), UnaryOp(..), Value(..)
 ) where
 

@@ -14,22 +14,19 @@ They don't verify other properties such as definite assignment.
 -}
 
 module Language.Qux.Annotated.TypeChecker (
-    -- * Check
+    -- * Environment
     Check,
     runCheck, execCheck,
 
-    -- * Contexts
+    -- * Global context
     Context,
     context, emptyContext,
+
+    -- * Local context
     Locals,
 
     -- * Type checking
-
-    -- ** Program checking
-    check,
-
-    -- ** Other node checking
-    checkProgram, checkDecl, checkStmt, checkExpr, checkValue
+    check, checkProgram, checkDecl, checkStmt, checkExpr, checkValue
 ) where
 
 import Control.Applicative
@@ -76,6 +73,7 @@ context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name 
 emptyContext :: Context
 emptyContext = Context { functions = Map.empty }
 
+
 -- | Local context.
 type Locals = Map Id Type
 
@@ -88,7 +86,7 @@ retrieve name = do
 
 
 -- |    Type checks the program, returning any errors that are found.
---      An result of @[]@ indicates the program is well-typed.
+--      A result of @[]@ indicates the program is well-typed.
 check :: Ann.Program SourcePos -> [TypeException]
 check program = execCheck (checkProgram program) (context $ sProgram program)
 
@@ -142,6 +140,7 @@ checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (sId name) >>
 checkExpr (Ann.BinaryExpr _ op lhs rhs)
     | op `elem` [Acc]               = do
         list <- expectExpr lhs [ListType undefined]
+
         let (ListType inner) = list in
             expectExpr rhs [IntType] >> return inner
     | op `elem` [Mul, Div, Mod]     = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
@@ -162,7 +161,7 @@ checkExpr (Ann.UnaryExpr _ op expr)
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.ValueExpr _ value)                       = lift $ checkValue value
 
--- -- | Type checks a value.
+-- | Type checks a value.
 checkValue :: Value -> Check Type
 checkValue (BoolValue _)        = return BoolType
 checkValue (IntValue _)         = return IntType
