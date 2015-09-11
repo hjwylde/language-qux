@@ -8,6 +8,9 @@ Qux is an experimental language developed from the ground up with the aim of sup
 This package provides tools for working with it (parsing, printing, type checking and running)
     within Haskell code.
 
+If you're interested in actually running Qux files, see [here](https://github.com/qux-lang/qux) for
+    the binary.
+
 ### Aims
 
 Qux is designed as an imperative, functional programming language with extended static checks for
