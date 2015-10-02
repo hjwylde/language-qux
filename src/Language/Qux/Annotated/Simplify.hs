@@ -15,8 +15,8 @@ module Language.Qux.Annotated.Simplify (
     sId, sProgram, sDecl, sStmt, sExpr, sType
 ) where
 
-import qualified Language.Qux.Annotated.Syntax as Ann
-import Language.Qux.Syntax
+import qualified    Language.Qux.Annotated.Syntax as Ann
+import              Language.Qux.Syntax
 
 
 -- | Simplifies an identifier.

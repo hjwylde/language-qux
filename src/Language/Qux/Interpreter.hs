@@ -40,10 +40,10 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Either
 
-import Data.List ((\\))
-import Data.Map (Map, (!))
-import qualified Data.Map as Map
-import Data.Maybe (fromJust, isJust)
+import              Data.List   ((\\))
+import              Data.Map    (Map, (!))
+import qualified    Data.Map    as Map
+import              Data.Maybe  (fromJust, isJust)
 
 import Language.Qux.Syntax
 

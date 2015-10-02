@@ -22,10 +22,10 @@ module Language.Qux.Annotated.Exception (
 
 import Data.List (intercalate)
 
-import Language.Qux.Annotated.Parser (SourcePos)
-import Language.Qux.Annotated.PrettyPrinter
-import qualified Language.Qux.Annotated.Syntax as Ann
-import Language.Qux.Syntax
+import              Language.Qux.Annotated.Parser           (SourcePos)
+import              Language.Qux.Annotated.PrettyPrinter
+import qualified    Language.Qux.Annotated.Syntax           as Ann
+import              Language.Qux.Syntax
 
 import Text.PrettyPrint (doubleQuotes)
 

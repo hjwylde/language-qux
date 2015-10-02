@@ -29,7 +29,7 @@ import Control.Monad.Trans.Except
 import Language.Qux.Annotated.Syntax
 import Language.Qux.Lexer
 
-import Text.Parsec hiding (State, parse)
+import Text.Parsec          hiding (State, parse)
 import Text.Parsec.Expr
 import Text.Parsec.Indent
 

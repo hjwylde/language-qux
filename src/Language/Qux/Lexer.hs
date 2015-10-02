@@ -23,8 +23,8 @@ module Language.Qux.Lexer (
 
 import Control.Monad.State
 
-import Text.Parsec hiding (State)
-import qualified Text.Parsec.Token as Token
+import              Text.Parsec         hiding (State)
+import qualified    Text.Parsec.Token   as Token
 
 
 -- | Lexer for the Qux language definition.
@@ -88,18 +88,8 @@ rightArrow = symbol_ "->"
 
 
 quxDef :: Token.GenLanguageDef String u (State SourcePos)
-quxDef = Token.LanguageDef
-    commentStart
-    commentEnd
-    commentLine
-    nestedComments
-    identStart
-    identLetter
-    opStart
-    opLetter
-    reservedNames
-    reservedOpNames
-    caseSensitive
+quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments identStart identLetter
+    opStart opLetter reservedNames reservedOpNames caseSensitive
         where
             commentStart    = "/*"
             commentEnd      = "*/"
