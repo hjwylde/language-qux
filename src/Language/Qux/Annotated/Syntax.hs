@@ -17,12 +17,7 @@ module Language.Qux.Annotated.Syntax (
     Annotated(..),
 
     -- * Annotated nodes
-    Id(..), Program(..),
-
-    Decl(..),
-    name, types, parameters, parameterNames, parameterTypes, returnType, stmts,
-
-    Stmt(..), Expr(..), Type(..),
+    Id(..), Program(..), Decl(..), Stmt(..), Expr(..), Type(..),
 
     -- * Regular nodes
     BinaryOp(..), UnaryOp(..), Value(..)
@@ -56,27 +51,6 @@ data Decl a = FunctionDecl a (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list 
 
 instance Annotated Decl where
     ann (FunctionDecl a _ _ _) = a
-
-name :: Decl a -> Id a
-name (FunctionDecl _ n _ _) = n
-
-types :: Decl a -> [Type a]
-types (FunctionDecl _ _ ps _) = map fst ps
-
-parameters :: Decl a -> [(Type a, Id a)]
-parameters (FunctionDecl _ _ ps _) = init ps
-
-parameterNames :: Decl a -> [Id a]
-parameterNames = (map snd) . parameters
-
-parameterTypes :: Decl a -> [Type a]
-parameterTypes = (map fst) . parameters
-
-returnType :: Decl a -> Type a
-returnType (FunctionDecl _ _ ps _) = fst $ last ps
-
-stmts :: Decl a -> [Stmt a]
-stmts (FunctionDecl _ _ _ ss) = ss
 
 -- | A statement.
 data Stmt a = IfStmt a (Expr a) [Stmt a] [Stmt a]   -- ^ A condition, true block and false block of statements.

@@ -66,7 +66,9 @@ data Context = Context {
 
 -- | Returns a context for the given program.
 context :: Program -> Context
-context (Program _ decls) = Context { functions = Map.fromList $ map (\d -> (name d, types d)) decls }
+context (Program _ decls) = Context {
+    functions = Map.fromList $ [(name, map fst parameters) | (FunctionDecl name parameters _) <- decls]
+    }
 
 -- | An empty context.
 emptyContext :: Context
@@ -95,12 +97,13 @@ checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
     | otherwise         = tell $ map duplicateFunctionName duplicates
     where
-        duplicates = decls \\ nubBy ((==) `on` sId . Ann.name) decls
+        duplicates                      = decls \\ nubBy ((==) `on` sId . name) decls
+        name (Ann.FunctionDecl _ n _ _) = n
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
 checkDecl (Ann.FunctionDecl _ _ parameters stmts)
-    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList (map (\(t, p) -> (sId p, sType t)) parameters))
+    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(sId p, sType t) | (t, p) <- parameters])
     | otherwise         = tell $ map (duplicateParameterName . snd) duplicates
     where
         duplicates = parameters \\ nubBy ((==) `on` sId . snd) parameters

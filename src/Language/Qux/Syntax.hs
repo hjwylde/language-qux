@@ -26,27 +26,6 @@ data Program = Program [Id] [Decl]
 data Decl = FunctionDecl Id [(Type, Id)] [Stmt] -- ^ A name, list of ('Type', 'Id') parameters and statements. The return type is treated as a parameter with id "@".
     deriving (Eq, Show)
 
-name :: Decl -> Id
-name (FunctionDecl n _ _) = n
-
-types :: Decl -> [Type]
-types (FunctionDecl _ ps _) = map fst ps
-
-parameters :: Decl -> [(Type, Id)]
-parameters (FunctionDecl _ ps _) = init ps
-
-parameterNames :: Decl -> [Id]
-parameterNames = (map snd) . parameters
-
-parameterTypes :: Decl -> [Type]
-parameterTypes = (map fst) . parameters
-
-returnType :: Decl -> Type
-returnType (FunctionDecl _ ps _) = fst $ last ps
-
-stmts :: Decl -> [Stmt]
-stmts (FunctionDecl _ _ ss) = ss
-
 -- | A statement.
 data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false block of statements.
             | ReturnStmt Expr           -- ^ An expression.

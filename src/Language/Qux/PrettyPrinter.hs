@@ -33,11 +33,8 @@ renderOneLine :: Doc -> String
 renderOneLine = renderStyle (style { mode = OneLineMode })
 
 
-instance Pretty Doc where
-    pPrint = id
-
 instance Pretty Program where
-    pPrint (Program module_ decls) = vcat $ map ($+$ emptyLine) ([
+    pPrint (Program module_ decls) = vcat $ map ($+$ text "") ([
         text "module" <+> hcat (punctuate (char '.') (map text module_))
         ] ++ map pPrint decls)
 
@@ -49,7 +46,7 @@ instance Pretty Decl where
         where
             parametersDoc = fsep $ punctuate
                 (space <> text "->")
-                (map (\(t, p) -> pPrint t <+> (if p == "@" then empty else text p)) parameters)
+                [pPrint t <+> (if p == "@" then empty else text p) | (t, p) <- parameters]
 
 instance Pretty Stmt where
     pPrint (IfStmt condition trueStmts falseStmts)  = vcat [
@@ -68,7 +65,7 @@ instance Pretty Expr where
     pPrint (ApplicationExpr name arguments) = text name <+> fsep (map pPrint arguments)
     pPrint (BinaryExpr op lhs rhs)          = parens $ fsep [pPrint lhs, pPrint op, pPrint rhs]
     pPrint (ListExpr elements)              = brackets $ fsep (punctuate comma (map pPrint elements))
-    pPrint (UnaryExpr Len expr)             = pipes $ pPrint expr
+    pPrint (UnaryExpr Len expr)             = char '|' <> pPrint expr <> char '|'
     pPrint (UnaryExpr op expr)              = pPrint op <> pPrint expr
     pPrint (ValueExpr value)                = pPrint value
 
@@ -105,10 +102,4 @@ instance Pretty Type where
 
 block :: [Stmt] -> Doc
 block = vcat . (map pPrint)
-
-emptyLine :: Doc
-emptyLine = text ""
-
-pipes :: Doc -> Doc
-pipes doc = char '|' <> doc <> char '|'
 
