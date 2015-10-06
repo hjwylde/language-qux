@@ -54,9 +54,12 @@ program = do
     pos <- getPosition
     whiteSpace
     checkIndent
+    reserved "module"
+    module_ <- sepBy1 id_ dot
+    checkIndent
     decls <- block decl
     eof
-    return $ Program pos decls
+    return $ Program pos module_ decls
 
 -- | 'Decl' parser.
 decl :: Parser (Decl SourcePos)

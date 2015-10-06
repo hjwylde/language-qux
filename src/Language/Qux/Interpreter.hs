@@ -76,7 +76,7 @@ data Context = Context {
 
 -- | Returns a context for the given program.
 context :: Program -> Context
-context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name d, (parameterNames d, stmts d))) decls }
+context (Program _ decls) = Context { functions = Map.fromList $ map (\d -> (name d, (parameterNames d, stmts d))) decls }
 
 -- | An empty context.
 emptyContext :: Context

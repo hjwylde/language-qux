@@ -43,12 +43,12 @@ data Id a = Id a String
 instance Annotated Id where
     ann (Id a _) = a
 
--- | A program is a list of declarations.
-data Program a = Program a [Decl a]
+-- | A program is a module identifier and a list of declarations.
+data Program a = Program a [Id a] [Decl a]
     deriving (Eq, Show)
 
 instance Annotated Program where
-    ann (Program a _) = a
+    ann (Program a _ _) = a
 
 -- | A declaration.
 data Decl a = FunctionDecl a (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list of ('Type', 'Id') parameters and statements. The return type is treated as a parameter with id "@".

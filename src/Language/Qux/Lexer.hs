@@ -18,7 +18,7 @@ module Language.Qux.Lexer (
     identifier, natural, operator, reserved, symbol, symbol_, whiteSpace,
 
     -- ** Symbols
-    brackets, colon, comma, parens, pipes, rightArrow
+    brackets, colon, comma, dot, parens, pipes, rightArrow
 ) where
 
 import Control.Monad.State
@@ -74,6 +74,10 @@ colon = symbol_ ":"
 comma :: ParsecT String u (State SourcePos) ()
 comma = symbol_ ","
 
+-- | Lexemes a dot, @.@.
+dot :: ParsecT String u (State SourcePos) ()
+dot = symbol_ "."
+
 -- | @parens p@ lexemes @p@ surrounded by @(..)@.
 parens :: ParsecT String u (State SourcePos) a -> ParsecT String u (State SourcePos) a
 parens = Token.parens lexer
@@ -106,7 +110,7 @@ quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments id
 keywords :: [String]
 keywords = [
     "_",
-    "else", "if", "return", "while",
+    "else", "if", "module", "return", "while",
     "false", "nil", "true",
     "Bool", "Int", "Nil"
     ]

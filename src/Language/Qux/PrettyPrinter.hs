@@ -28,8 +28,6 @@ import Text.PrettyPrint
 import Text.PrettyPrint.HughesPJClass
 
 
--- TODO (hjw): use maybeParens to avoid using so many parenthesis
-
 -- | Like 'render', but renders the doc on one line.
 renderOneLine :: Doc -> String
 renderOneLine = renderStyle (style { mode = OneLineMode })
@@ -39,7 +37,9 @@ instance Pretty Doc where
     pPrint = id
 
 instance Pretty Program where
-    pPrint (Program decls) = vcat $ map (($+$ emptyLine) . pPrint) decls
+    pPrint (Program module_ decls) = vcat $ map ($+$ emptyLine) ([
+        text "module" <+> hcat (punctuate (char '.') (map text module_))
+        ] ++ map pPrint decls)
 
 instance Pretty Decl where
     pPrint (FunctionDecl name parameters stmts) = vcat [

@@ -18,8 +18,8 @@ type Id = String
 
 -- * Nodes
 
--- | A program is a list of declarations.
-newtype Program = Program [Decl]
+-- | A program is a module identifier and a list of declarations.
+data Program = Program [Id] [Decl]
     deriving (Eq, Show)
 
 -- | A declaration.

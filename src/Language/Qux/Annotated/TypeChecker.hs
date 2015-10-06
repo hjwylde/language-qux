@@ -66,7 +66,7 @@ data Context = Context {
 
 -- | Returns a context for the given program.
 context :: Program -> Context
-context (Program decls) = Context { functions = Map.fromList $ map (\d -> (name d, types d)) decls }
+context (Program _ decls) = Context { functions = Map.fromList $ map (\d -> (name d, types d)) decls }
 
 -- | An empty context.
 emptyContext :: Context
@@ -91,7 +91,7 @@ check program = execCheck (checkProgram program) (context $ sProgram program)
 
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
-checkProgram (Ann.Program _ decls)
+checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
     | otherwise         = tell $ map duplicateFunctionName duplicates
     where

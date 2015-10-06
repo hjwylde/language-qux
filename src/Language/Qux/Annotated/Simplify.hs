@@ -25,7 +25,7 @@ sId (Ann.Id _ id) = id
 
 -- | Simplifies a program.
 sProgram :: Ann.Program a -> Program
-sProgram (Ann.Program _ decls) = Program $ map sDecl decls
+sProgram (Ann.Program _ module_ decls) = Program (map sId module_) (map sDecl decls)
 
 -- | Simplifies a declaration.
 sDecl :: Ann.Decl a -> Decl
