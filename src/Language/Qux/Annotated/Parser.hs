@@ -52,6 +52,7 @@ id_ = Id <$> getPosition <*> identifier <?> "identifier"
 program :: Parser (Program SourcePos)
 program = do
     pos <- getPosition
+
     whiteSpace
     checkIndent
     reserved "module"
@@ -60,11 +61,13 @@ program = do
     decls <- block decl
     eof
     return $ Program pos module_ decls
+    <?> "program"
 
 -- | 'Decl' parser.
 decl :: Parser (Decl SourcePos)
 decl = do
     pos <- getPosition
+
     name <- id_
     symbol_ "::"
     parameters <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
@@ -72,29 +75,29 @@ decl = do
     colon
     indented
     stmts <- block stmt
+
     return $ FunctionDecl pos name (parameters ++ [(returnType, Id pos "@")]) stmts
     <?> "function declaration"
 
 -- | 'Stmt' parser.
 stmt :: Parser (Stmt SourcePos)
-stmt = choice [
-    ifStmt,
-    returnStmt,
-    whileStmt
-    ] <?> "statement"
+stmt = choice [ifStmt, returnStmt, whileStmt] <?> "statement"
     where
         ifStmt      = do
             pos <- getPosition
+
             reserved "if"
             condition <- expr
             colon
             indented
             trueStmts <- block stmt
             falseStmts <- option [] (checkIndent >> withBlock' (do { reserved "else"; colon }) stmt)
+
             return $ IfStmt pos condition trueStmts falseStmts
         returnStmt  = ReturnStmt <$> getPosition <* reserved "return" <*> expr
         whileStmt   = do
             pos <- getPosition
+
             withBlock (WhileStmt pos) (reserved "while" *> expr <* colon) stmt
 
 -- | 'Expr' parser.

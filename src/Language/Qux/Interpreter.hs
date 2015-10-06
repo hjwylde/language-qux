@@ -159,6 +159,6 @@ evalUnaryExpr _ _                       = error "malformed program"
 
 
 runBoolValue :: Value -> Bool
-runBoolValue (BoolValue value)  = value
+runBoolValue (BoolValue bool)   = bool
 runBoolValue _                  = error "malformed program"
 

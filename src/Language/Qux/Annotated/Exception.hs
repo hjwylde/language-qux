@@ -63,7 +63,7 @@ invalidArgumentsCount (Ann.ApplicationExpr pos _ arguments) expected = TypeExcep
     "invalid arguments count", show $ length arguments,
     "\nexpecting", show expected
     ]
-invalidArgumentsCount _ _ = undefined
+invalidArgumentsCount _ _ = error "internal error"
 
 -- |    @mismatchedType received expects@ creates a 'TypeException' indicating that one of @expects@
 --      was expected.
@@ -77,7 +77,7 @@ mismatchedType received expects = TypeException (Ann.ann received) $ intercalate
 --      (@app@) was made to an undefined function.
 undefinedFunctionCall :: Ann.Expr SourcePos -> TypeException
 undefinedFunctionCall (Ann.ApplicationExpr pos (Ann.Id _ name) _) = TypeException pos ("call to undefined function \"" ++ name ++ "\"")
-undefinedFunctionCall _ = undefined
+undefinedFunctionCall _ = error "internal error"
 
 
 sentence :: String -> [String] -> String

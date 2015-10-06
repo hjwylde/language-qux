@@ -127,7 +127,7 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
 checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (sId name) >>= maybe
-    (tell [undefinedFunctionCall e] >> return undefined)
+    (tell [undefinedFunctionCall e] >> return (error "internal error: undefined function call has no type"))
     (\types -> do
         let expected = init types
 
@@ -138,16 +138,16 @@ checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (sId name) >>
         return $ last types)
 checkExpr (Ann.BinaryExpr _ op lhs rhs)
     | op `elem` [Acc]               = do
-        list <- expectExpr lhs [ListType undefined]
+        list <- expectExpr lhs [ListType $ error "internal error: top type not implemented"]
 
         let (ListType inner) = list in
             expectExpr rhs [IntType] >> return inner
     | op `elem` [Mul, Div, Mod]     = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
-    | op `elem` [Add, Sub]          = expectExpr lhs [IntType, ListType undefined] >>= (expectExpr rhs) . (:[])
+    | op `elem` [Add, Sub]          = expectExpr lhs [IntType, ListType $ error "internal error: top type not implemented"] >>= (expectExpr rhs) . (:[])
     | op `elem` [Lt, Lte, Gt, Gte]  = expectExpr lhs [IntType] >> expectExpr rhs [IntType] >> return BoolType
     | op `elem` [Eq, Neq]           = ((:[]) <$> checkExpr lhs >>= expectExpr rhs) >> return BoolType
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
-checkExpr (Ann.ListExpr _ [])                           = return $ ListType undefined
+checkExpr (Ann.ListExpr _ [])                           = return $ ListType (error "internal error: top type not implemented")
 checkExpr (Ann.ListExpr _ elements)                     = do
     expected <- checkExpr $ head elements
 
@@ -155,7 +155,7 @@ checkExpr (Ann.ListExpr _ elements)                     = do
 
     return $ ListType expected
 checkExpr (Ann.UnaryExpr _ op expr)
-    | op `elem` [Len]               = expectExpr expr [ListType undefined] >> return IntType
+    | op `elem` [Len]               = expectExpr expr [ListType $ error "internal error: top type not implemented"] >> return IntType
     | op `elem` [Neg]               = expectExpr expr [IntType]
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.ValueExpr _ value)                       = lift $ checkValue value
@@ -164,7 +164,7 @@ checkExpr (Ann.ValueExpr _ value)                       = lift $ checkValue valu
 checkValue :: Value -> Check Type
 checkValue (BoolValue _)        = return BoolType
 checkValue (IntValue _)         = return IntType
-checkValue (ListValue [])       = return $ ListType undefined
+checkValue (ListValue [])       = return $ ListType (error "internal error: top type not implemented")
 checkValue (ListValue elements) = do
     expected <- checkValue $ head elements
 
@@ -193,7 +193,7 @@ expectType received expects
 
 attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos BoolType         = Ann.BoolType pos
-attach pos IntType          = Ann.IntType pos
+attach pos IntType          = Ann.IntType  pos
 attach pos (ListType inner) = Ann.ListType pos (attach undefined inner)
-attach pos NilType          = Ann.NilType pos
+attach pos NilType          = Ann.NilType  pos
 

@@ -29,7 +29,7 @@ sProgram (Ann.Program _ module_ decls) = Program (map sId module_) (map sDecl de
 
 -- | Simplifies a declaration.
 sDecl :: Ann.Decl a -> Decl
-sDecl (Ann.FunctionDecl _ id parameters stmts) = FunctionDecl (sId id) (map (tmap sType sId) parameters) (map sStmt stmts)
+sDecl (Ann.FunctionDecl _ name parameters stmts) = FunctionDecl (sId name) (map (tmap sType sId) parameters) (map sStmt stmts)
 
 -- | Simplifies a statement.
 sStmt :: Ann.Stmt a -> Stmt
