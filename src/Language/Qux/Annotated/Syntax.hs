@@ -33,6 +33,8 @@ module Language.Qux.Annotated.Syntax (
 import              Language.Qux.Syntax (BinaryOp(..), UnaryOp(..), Value(..))
 import qualified    Language.Qux.Syntax as S
 
+import Text.PrettyPrint.HughesPJClass
+
 
 -- | An annotated class.
 -- | Annotations are used for attaching data to a node, such as a 'Text.Parsec.SourcePos'.
@@ -56,6 +58,9 @@ instance Annotated Id where
 instance Simplifiable (Id a) [Char] where
     simp (Id _ id_) = id_
 
+instance Pretty (Id a) where
+    pPrint = text . simp
+
 
 -- | A program is a module identifier (list of 'Id''s) and a list of declarations.
 data Program a = Program a [Id a] [Decl a]
@@ -66,6 +71,9 @@ instance Annotated Program where
 
 instance Simplifiable (Program a) S.Program where
     simp (Program _ module_ decls) = S.Program (map simp module_) (map simp decls)
+
+instance Pretty (Program a) where
+    pPrint = pPrint . simp
 
 
 -- | A declaration.
@@ -78,6 +86,9 @@ instance Annotated Decl where
 
 instance Simplifiable (Decl a) S.Decl where
     simp (FunctionDecl _ name parameters stmts) = S.FunctionDecl (simp name) (map (tmap simp simp) parameters) (map simp stmts)
+
+instance Pretty (Decl a) where
+    pPrint = pPrint . simp
 
 
 -- | A statement.
@@ -95,6 +106,9 @@ instance Simplifiable (Stmt a) S.Stmt where
     simp (IfStmt _ condition trueStmts falseStmts)  = S.IfStmt (simp condition) (map simp trueStmts) (map simp falseStmts)
     simp (ReturnStmt _ expr)                        = S.ReturnStmt (simp expr)
     simp (WhileStmt _ condition stmts)              = S.WhileStmt (simp condition) (map simp stmts)
+
+instance Pretty (Stmt a) where
+    pPrint = pPrint . simp
 
 
 -- | A complex expression.
@@ -119,6 +133,9 @@ instance Simplifiable (Expr a) S.Expr where
     simp (UnaryExpr _ op expr)              = S.UnaryExpr op (simp expr)
     simp (ValueExpr _ value)                = S.ValueExpr value
 
+instance Pretty (Expr a) where
+    pPrint = pPrint . simp
+
 
 -- | A type.
 data Type a = BoolType a
@@ -138,6 +155,9 @@ instance Simplifiable (Type a) S.Type where
     simp (IntType _)        = S.IntType
     simp (ListType _ inner) = S.ListType $ simp inner
     simp (NilType _)        = S.NilType
+
+instance Pretty (Type a) where
+    pPrint = pPrint . simp
 
 
 -- Helper methods

@@ -1,7 +1,7 @@
 packages:
 - '.'
 ghc-options:
-    'language-qux': -Wall -Werror -fno-warn-name-shadowing -fno-warn-orphans
+    'language-qux': -Wall -Werror -fno-warn-name-shadowing
 
 resolver: lts-3.4
 
