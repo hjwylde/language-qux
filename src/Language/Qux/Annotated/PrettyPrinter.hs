@@ -14,28 +14,26 @@ To render a program, call: @render $ pPrint program@
 
 module Language.Qux.Annotated.PrettyPrinter where
 
-import Language.Qux.Annotated.Simplify
 import Language.Qux.Annotated.Syntax
-import Language.Qux.Syntax              ()
 
 import Text.PrettyPrint.HughesPJClass
 
 
 instance Pretty (Id a) where
-    pPrint = text . sId
+    pPrint = text . simp
 
 instance Pretty (Program a) where
-    pPrint = pPrint . sProgram
+    pPrint = pPrint . simp
 
 instance Pretty (Decl a) where
-    pPrint = pPrint . sDecl
+    pPrint = pPrint . simp
 
 instance Pretty (Stmt a) where
-    pPrint = pPrint . sStmt
+    pPrint = pPrint . simp
 
 instance Pretty (Expr a) where
-    pPrint = pPrint . sExpr
+    pPrint = pPrint . simp
 
 instance Pretty (Type a) where
-    pPrint = pPrint . sType
+    pPrint = pPrint . simp
 

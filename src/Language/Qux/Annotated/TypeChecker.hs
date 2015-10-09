@@ -41,7 +41,7 @@ import qualified    Data.Map        as Map
 
 import              Language.Qux.Annotated.Exception
 import              Language.Qux.Annotated.Parser       (SourcePos)
-import              Language.Qux.Annotated.Simplify
+import              Language.Qux.Annotated.Syntax       (simp)
 import qualified    Language.Qux.Annotated.Syntax       as Ann
 import              Language.Qux.Syntax
 
@@ -89,7 +89,7 @@ retrieve name = do
 -- |    Type checks the program, returning any errors that are found.
 --      A result of @[]@ indicates the program is well-typed.
 check :: Ann.Program SourcePos -> [TypeException]
-check program = execCheck (checkProgram program) (context $ sProgram program)
+check program = execCheck (checkProgram program) (context $ simp program)
 
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
@@ -97,16 +97,16 @@ checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
     | otherwise         = tell $ map duplicateFunctionName duplicates
     where
-        duplicates                      = decls \\ nubBy ((==) `on` sId . name) decls
+        duplicates                      = decls \\ nubBy ((==) `on` simp . name) decls
         name (Ann.FunctionDecl _ n _ _) = n
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
 checkDecl (Ann.FunctionDecl _ _ parameters stmts)
-    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(sId p, sType t) | (t, p) <- parameters])
+    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- parameters])
     | otherwise         = tell $ map (duplicateParameterName . snd) duplicates
     where
-        duplicates = parameters \\ nubBy ((==) `on` sId . snd) parameters
+        duplicates = parameters \\ nubBy ((==) `on` simp . snd) parameters
 
 checkBlock :: [Ann.Stmt SourcePos] -> StateT Locals Check ()
 checkBlock = mapM_ checkStmt
@@ -129,7 +129,7 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
-checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (sId name) >>= maybe
+checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (simp name) >>= maybe
     (tell [undefinedFunctionCall e] >> return (error "internal error: undefined function call has no type"))
     (\types -> do
         let expected = init types
@@ -191,8 +191,8 @@ expectValue value expects = (attach undefined <$> checkValue value) >>= flip exp
 
 expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects
-    | sType received `elem` expects = return $ sType received
-    | otherwise                     = tell [mismatchedType received expects] >> return (sType received)
+    | simp received `elem` expects  = return $ simp received
+    | otherwise                     = tell [mismatchedType received expects] >> return (simp received)
 
 attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos BoolType         = Ann.BoolType pos

@@ -8,6 +8,7 @@ License     : BSD3
 Maintainer  : public@hjwylde.com
 
 Abstract syntax tree nodes.
+
 Instances of 'Pretty' are provided for pretty printing.
 -}
 

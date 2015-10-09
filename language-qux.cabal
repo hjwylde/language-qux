@@ -23,7 +23,6 @@ library
         Language.Qux.Annotated.Exception,
         Language.Qux.Annotated.Parser,
         Language.Qux.Annotated.PrettyPrinter,
-        Language.Qux.Annotated.Simplify,
         Language.Qux.Annotated.Syntax,
         Language.Qux.Annotated.TypeChecker,
         Language.Qux.Syntax,
@@ -33,6 +32,10 @@ library
         Paths_language_qux
 
     default-language: Haskell2010
+    other-extensions:
+        FlexibleInstances,
+        FunctionalDependencies,
+        MultiParamTypeClasses
     build-depends:
         base >= 4.8 && < 5,
         containers == 0.5.*,
