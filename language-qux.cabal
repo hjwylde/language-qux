@@ -8,7 +8,7 @@ homepage:       https://github.com/qux-lang/language-qux
 synopsis:       Utilities for working with the Qux language
 description:    Qux is an experimental language developed from the ground up with the aim of static
                 compile time verification. This package provides tools for working with it (parsing,
-                printing, type checking and running).
+                pretty printing and type checking).
 
 license:        BSD3
 license-file:   LICENSE
@@ -26,7 +26,6 @@ library
         Language.Qux.Annotated.Simplify,
         Language.Qux.Annotated.Syntax,
         Language.Qux.Annotated.TypeChecker,
-        Language.Qux.Interpreter,
         Language.Qux.PrettyPrinter,
         Language.Qux.Syntax,
         Language.Qux.Version

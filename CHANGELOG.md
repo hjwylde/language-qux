@@ -3,8 +3,9 @@
 #### Upcoming in master
 
 * Added type checking.
-* Deprecated the interpreter.
 * Added required `module` statement.
+* Removed the interpreter. Given that this project is currently in pre-release, there may be
+  breaking changes between minor version increments.
 
 #### v0.1.1.3
 
