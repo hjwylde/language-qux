@@ -2,8 +2,9 @@
 
 #### Upcoming in master
 
-* Added list value parsing and type checking.
-* Rewrote type checker to return a list of errors.
+* Added type checking.
+* Deprecated the interpreter.
+* Added required `module` statement.
 
 #### v0.1.1.3
 
