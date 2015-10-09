@@ -23,11 +23,12 @@ module Language.Qux.Annotated.Exception (
 import Data.List (intercalate)
 
 import              Language.Qux.Annotated.Parser           (SourcePos)
-import              Language.Qux.Annotated.PrettyPrinter
+import              Language.Qux.Annotated.PrettyPrinter    ()
 import qualified    Language.Qux.Annotated.Syntax           as Ann
 import              Language.Qux.Syntax
 
-import Text.PrettyPrint (doubleQuotes)
+import Text.PrettyPrint
+import Text.PrettyPrint.HughesPJClass
 
 
 -- | An exception that occurs during type checking. See "Language.Qux.Annotated.TypeChecker".
@@ -72,6 +73,8 @@ mismatchedType received expects = TypeException (Ann.ann received) $ intercalate
     "unexpected type", renderOneLine $ doubleQuotes (pPrint received),
     "\nexpecting", sentence "or" (map (renderOneLine . doubleQuotes . pPrint) expects)
     ]
+    where
+        renderOneLine = renderStyle (style { mode = OneLineMode })
 
 -- |    @undefinedFunctionCall app@ creates a 'TypeException' indicating that an application call
 --      (@app@) was made to an undefined function.

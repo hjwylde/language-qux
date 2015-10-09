@@ -12,19 +12,13 @@ Maintainer  : public@hjwylde.com
 To render a program, call: @render $ pPrint program@
 -}
 
-module Language.Qux.Annotated.PrettyPrinter (
-    -- * Types
-    Pretty(..), Style(..), Mode(..),
-
-    -- * Rendering
-    render, renderStyle, renderOneLine
-) where
+module Language.Qux.Annotated.PrettyPrinter where
 
 import Language.Qux.Annotated.Simplify
 import Language.Qux.Annotated.Syntax
-import Language.Qux.PrettyPrinter
+import Language.Qux.Syntax              ()
 
-import Text.PrettyPrint (text)
+import Text.PrettyPrint.HughesPJClass
 
 
 instance Pretty (Id a) where

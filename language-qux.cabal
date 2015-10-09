@@ -26,7 +26,6 @@ library
         Language.Qux.Annotated.Simplify,
         Language.Qux.Annotated.Syntax,
         Language.Qux.Annotated.TypeChecker,
-        Language.Qux.PrettyPrinter,
         Language.Qux.Syntax,
         Language.Qux.Version
     other-modules:
