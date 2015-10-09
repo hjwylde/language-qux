@@ -37,9 +37,9 @@ import Text.Parsec.Indent
 -- | A 'ParsecT' that retains indentation information.
 type Parser a = ParsecT String () (State SourcePos) a
 
--- |    @parse parser sourceName input@ parses @input@ using @parser@.
---      Returns either a 'ParseError' or @a@.
---      This method wraps 'runParserT' by running the indentation resolver over the parser's state.
+-- | @parse parser sourceName input@ parses @input@ using @parser@.
+--   Returns either a 'ParseError' or @a@.
+--   This method wraps 'runParserT' by running the indentation resolver over the parser's state.
 parse :: Parser a -> SourceName -> String -> Except ParseError a
 parse parser sourceName input = except $ runIndent sourceName (runParserT parser () sourceName input)
 
@@ -151,7 +151,8 @@ binaryExpr op sym = getPosition >>= \pos -> BinaryExpr pos op <$ operator sym
 unaryExpr :: UnaryOp -> String -> Parser ((Expr SourcePos) -> (Expr SourcePos))
 unaryExpr op sym = getPosition >>= \pos -> UnaryExpr pos op <$ operator sym
 
--- | 'Value' parser.
+-- |    'Value' parser.
+--      A value doesn't have a source position attached as this can be retrieved from a 'ValueExpr'.
 value :: Parser Value
 value = choice [
     BoolValue False <$  reserved "false",

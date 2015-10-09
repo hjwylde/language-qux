@@ -56,8 +56,8 @@ symbol = Token.symbol lexer
 symbol_ :: String -> ParsecT String u (State SourcePos) ()
 symbol_ = void . symbol
 
--- |    Lexemes white space.
---      White space includes comments.
+-- | Lexemes white space.
+--   White space includes comments.
 whiteSpace :: ParsecT String u (State SourcePos) ()
 whiteSpace = Token.whiteSpace lexer
 

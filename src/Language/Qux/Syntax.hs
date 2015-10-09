@@ -74,7 +74,8 @@ instance Pretty Stmt where
 
 
 -- | A complex expression.
-data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name to call and the arguments to pass as parameters.
+data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name to call and the arguments to pass
+                                            --   as parameters.
             | BinaryExpr BinaryOp Expr Expr -- ^ A binary operation.
             | ListExpr [Expr]               -- ^ A list expression.
             | UnaryExpr UnaryOp Expr        -- ^ A unary operation.

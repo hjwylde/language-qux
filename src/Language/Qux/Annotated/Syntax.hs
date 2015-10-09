@@ -37,13 +37,13 @@ import Text.PrettyPrint.HughesPJClass
 
 
 -- | An annotated class.
--- | Annotations are used for attaching data to a node, such as a 'Text.Parsec.SourcePos'.
+--   Annotations are used for attaching data to a node, such as a 'Text.Parsec.SourcePos'.
 class Annotated n where
     ann :: n a -> a
 
 -- | A simplifiable class.
--- | Simplifiable is used to simplify a node to a a simpler form.
--- | See "Language.Qux.Syntax" for simpler forms of the nodes defined here.
+--   Simplifiable is used to simplify a node to a a simpler form.
+--   See "Language.Qux.Syntax" for simpler forms of the nodes defined here.
 class Simplifiable n r | n -> r where
     simp :: n -> r
 

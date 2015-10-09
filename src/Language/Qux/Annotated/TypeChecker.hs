@@ -19,7 +19,7 @@ module Language.Qux.Annotated.TypeChecker (
     runCheck, execCheck,
 
     -- * Global context
-    Context,
+    Context(..),
     context, emptyContext,
 
     -- * Local context
@@ -46,22 +46,22 @@ import qualified    Language.Qux.Annotated.Syntax       as Ann
 import              Language.Qux.Syntax
 
 
--- |    A type that allows collecting errors while type checking a program.
---      Requires a 'Context' for evaluation.
+-- | A type that allows collecting errors while type checking a program.
+--   Requires a 'Context' for evaluation.
 type Check = ReaderT Context (Writer [TypeException])
 
 -- | Runs the given check with the context.
 runCheck :: Check a -> Context -> (a, [TypeException])
 runCheck check context = runWriter $ runReaderT check context
 
+-- | Runs the given check with the context and extracts the exceptions.
 execCheck :: Check a -> Context -> [TypeException]
 execCheck check context = execWriter $ runReaderT check context
 
 
--- |    Global context that holds function definition types.
---      The function name and parameter types are held.
+-- | Global context that holds function definition types.
 data Context = Context {
-    functions :: Map Id [Type]
+    functions :: Map Id [Type] -- ^ A map of function names to parameter types.
     }
 
 -- | Returns a context for the given program.
@@ -76,6 +76,7 @@ emptyContext = Context { functions = Map.empty }
 
 
 -- | Local context.
+--   This is a map of variable names to types (e.g., parameters).
 type Locals = Map Id Type
 
 retrieve :: Id -> StateT Locals Check (Maybe [Type])
@@ -86,8 +87,8 @@ retrieve name = do
     return $ maybeLocal <|> maybeDef
 
 
--- |    Type checks the program, returning any errors that are found.
---      A result of @[]@ indicates the program is well-typed.
+-- | Type checks the program, returning any errors that are found.
+--   A result of @[]@ indicates the program is well-typed.
 check :: Ann.Program SourcePos -> [TypeException]
 check program = execCheck (checkProgram program) (context $ simp program)
 

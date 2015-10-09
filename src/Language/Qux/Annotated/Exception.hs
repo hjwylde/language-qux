@@ -7,7 +7,7 @@ Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
 Maintainer  : public@hjwylde.com
 
-Exceptions and utility creation functions.
+Exceptions and utility functions.
 -}
 
 module Language.Qux.Annotated.Exception (
@@ -15,7 +15,7 @@ module Language.Qux.Annotated.Exception (
     TypeException,
     pos, message,
 
-    -- ** Creation functions
+    -- ** Utility functions
     duplicateFunctionName, duplicateParameterName, invalidArgumentsCount, mismatchedType,
     undefinedFunctionCall
 ) where
@@ -45,19 +45,19 @@ message :: TypeException -> String
 message (TypeException _ m) = m
 
 
--- |    @duplciateFunctionName decl@ creates a 'TypeException' indicating that a duplicate function
---      declaration @decl@ was found.
+-- | @duplciateFunctionName decl@ creates a 'TypeException' indicating that a duplicate function
+--   declaration @decl@ was found.
 duplicateFunctionName :: Ann.Decl SourcePos -> TypeException
 duplicateFunctionName (Ann.FunctionDecl pos (Ann.Id _ name) _ _) = TypeException pos ("duplicate function name \"" ++ name ++ "\"")
 
--- |    @duplicateParameterName parameter@ creates a 'TypeException' indicating that a duplicate
---      parameter @parameter@ was found.
+-- | @duplicateParameterName parameter@ creates a 'TypeException' indicating that a duplicate
+--   parameter @parameter@ was found.
 duplicateParameterName :: Ann.Id SourcePos -> TypeException
 duplicateParameterName (Ann.Id pos name) = TypeException pos ("duplicate parameter name \"" ++ name ++ "\"")
 --
--- |    @invalidArgumentsCount received expected@ creates a 'TypeException' indicating that an
---      application call (@received@) with an invalid number of arguments was made to a function
---      expecting @expected@.
+-- | @invalidArgumentsCount received expected@ creates a 'TypeException' indicating that an
+--   application call (@received@) with an invalid number of arguments was made to a function
+--   expecting @expected@.
 invalidArgumentsCount :: Ann.Expr SourcePos -> Int -> TypeException
 invalidArgumentsCount (Ann.ApplicationExpr pos _ arguments) expected = TypeException pos $ intercalate " " [
     "invalid arguments count", show $ length arguments,
@@ -65,24 +65,21 @@ invalidArgumentsCount (Ann.ApplicationExpr pos _ arguments) expected = TypeExcep
     ]
 invalidArgumentsCount _ _ = error "internal error"
 
--- |    @mismatchedType received expects@ creates a 'TypeException' indicating that one of @expects@
---      was expected.
+-- | @mismatchedType received expects@ creates a 'TypeException' indicating that one of @expects@
+--   was expected.
 mismatchedType :: Ann.Type SourcePos -> [Type] -> TypeException
 mismatchedType received expects = TypeException (Ann.ann received) $ intercalate " " [
     "unexpected type", renderOneLine $ doubleQuotes (pPrint received),
     "\nexpecting", sentence "or" (map (renderOneLine . doubleQuotes . pPrint) expects)
     ]
     where
-        renderOneLine = renderStyle (style { mode = OneLineMode })
+        renderOneLine   = renderStyle (style { mode = OneLineMode })
+        sentence _ [x]  = x
+        sentence sep xs = intercalate " " [intercalate ", " (map show $ init xs), sep, show $ last xs]
 
--- |    @undefinedFunctionCall app@ creates a 'TypeException' indicating that an application call
---      (@app@) was made to an undefined function.
+-- | @undefinedFunctionCall app@ creates a 'TypeException' indicating that an application call
+--   (@app@) was made to an undefined function.
 undefinedFunctionCall :: Ann.Expr SourcePos -> TypeException
 undefinedFunctionCall (Ann.ApplicationExpr pos (Ann.Id _ name) _) = TypeException pos ("call to undefined function \"" ++ name ++ "\"")
 undefinedFunctionCall _ = error "internal error"
-
-
-sentence :: String -> [String] -> String
-sentence _ [x]  = x
-sentence sep xs = intercalate " " [intercalate ", " (map show $ init xs), sep, show $ last xs]
 
