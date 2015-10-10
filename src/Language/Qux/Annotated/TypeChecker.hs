@@ -115,7 +115,7 @@ checkDecl (Ann.FunctionDecl _ _ parameters stmts)
 checkBlock :: [Ann.Stmt SourcePos] -> StateT Locals Check ()
 checkBlock = mapM_ checkStmt
 
--- -- | Type checks a statement.
+-- | Type checks a statement.
 checkStmt :: Ann.Stmt SourcePos -> StateT Locals Check ()
 checkStmt (Ann.IfStmt _ condition trueStmts falseStmts)   = do
     expectExpr_ condition [BoolType]
@@ -134,7 +134,7 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
 checkExpr (Ann.ApplicationExpr pos name arguments)      = retrieve (simp name) >>= maybe
-    (tell [UndefinedFunctionCall pos (simp name)] >> return (error "internal error: undefined function call has no type (try applying name resolution)"))
+    (error "internal error: undefined function call has no type (try applying name resolution)")
     (\types -> do
         let expected = init types
 
@@ -161,6 +161,7 @@ checkExpr (Ann.ListExpr _ elements)                     = do
     mapM_ (flip expectExpr [expected]) (tail elements)
 
     return $ ListType expected
+checkExpr (Ann.TypedExpr _ _ _)                         = error "internal error: typed expr not implemented"
 checkExpr (Ann.UnaryExpr _ op expr)
     | op `elem` [Len]               = expectExpr expr [ListType $ error "internal error: top type not implemented"] >> return IntType
     | op `elem` [Neg]               = expectExpr expr [IntType]

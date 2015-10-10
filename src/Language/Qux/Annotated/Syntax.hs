@@ -116,6 +116,8 @@ instance Pretty (Stmt a) where
 data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name to call and the arguments to pass as parameters.
             | BinaryExpr a BinaryOp (Expr a) (Expr a)   -- ^ A binary operation.
             | ListExpr a [Expr a]                       -- ^ A list expression.
+            | TypedExpr a S.Type (Expr a)               -- ^ A typed expression.
+                                                        --   See "Language.Qux.Annotated.TypeResolver".
             | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
             | ValueExpr a Value                         -- ^ A raw value.
     deriving (Eq, Functor, Show)
@@ -124,6 +126,7 @@ instance Annotated Expr where
     ann (ApplicationExpr a _ _) = a
     ann (BinaryExpr a _ _ _)    = a
     ann (ListExpr a _)          = a
+    ann (TypedExpr a _ _)       = a
     ann (UnaryExpr a _ _)       = a
     ann (ValueExpr a _)         = a
 
@@ -131,6 +134,7 @@ instance Simplifiable (Expr a) S.Expr where
     simp (ApplicationExpr _ id arguments)   = S.ApplicationExpr (simp id) (map simp arguments)
     simp (BinaryExpr _ op lhs rhs)          = S.BinaryExpr op (simp lhs) (simp rhs)
     simp (ListExpr _ elements)              = S.ListExpr (map simp elements)
+    simp (TypedExpr _ type_ expr)           = S.TypedExpr type_ (simp expr)
     simp (UnaryExpr _ op expr)              = S.UnaryExpr op (simp expr)
     simp (ValueExpr _ value)                = S.ValueExpr value
 

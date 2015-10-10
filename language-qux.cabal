@@ -24,6 +24,7 @@ library
         Language.Qux.Annotated.Parser,
         Language.Qux.Annotated.Syntax,
         Language.Qux.Annotated.TypeChecker,
+        Language.Qux.Annotated.TypeResolver,
         Language.Qux.Syntax,
         Language.Qux.Version
     other-modules:

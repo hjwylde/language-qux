@@ -33,8 +33,6 @@ data TypeException  = TypeException SourcePos String        -- ^ A generic type 
                                                             --   arguments was passed to the
                                                             --   function call.
                     | MismatchedType SourcePos Id [Id]      -- ^ Indicates a type mismatch.
-                    | UndefinedFunctionCall SourcePos Id    -- ^ Indicates a function call to a
-                                                            --   non-existent funciton.
     deriving Eq
 
 instance Show TypeException where
@@ -47,7 +45,6 @@ pos (DuplicateFunctionName p _)     = p
 pos (DuplicateParameterName p _)    = p
 pos (InvalidFunctionCall p _ _)     = p
 pos (MismatchedType p _ _)          = p
-pos (UndefinedFunctionCall p _)     = p
 
 -- | Creates a human understandable message from the exception.
 message :: TypeException -> String
@@ -65,5 +62,4 @@ message (MismatchedType _ received expects)         = intercalate " " [
     where
         sentence _ [x]  = x
         sentence sep xs = intercalate " " [intercalate ", " (map show $ init xs), sep, show $ last xs]
-message (UndefinedFunctionCall _ name)              = "call to undefined function \"" ++ name ++ "\""
 
