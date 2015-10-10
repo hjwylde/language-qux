@@ -12,74 +12,58 @@ Exceptions and utility functions.
 
 module Language.Qux.Annotated.Exception (
     -- * Type exception
-    TypeException,
+    TypeException(..),
     pos, message,
-
-    -- ** Utility functions
-    duplicateFunctionName, duplicateParameterName, invalidArgumentsCount, mismatchedType,
-    undefinedFunctionCall
 ) where
 
 import Data.List (intercalate)
 
-import              Language.Qux.Annotated.Parser           (SourcePos)
-import qualified    Language.Qux.Annotated.Syntax           as Ann
-import              Language.Qux.Syntax
-
-import Text.PrettyPrint
-import Text.PrettyPrint.HughesPJClass
+import Language.Qux.Annotated.Parser (SourcePos)
+import Language.Qux.Syntax
 
 
 -- | An exception that occurs during type checking. See "Language.Qux.Annotated.TypeChecker".
-data TypeException = TypeException SourcePos String
+data TypeException  = TypeException SourcePos String        -- ^ A generic type exception with a
+                                                            --   position and message.
+                    | DuplicateFunctionName SourcePos Id    -- ^ Indicates a function of the given
+                                                            --   name already exists.
+                    | DuplicateParameterName SourcePos Id   -- ^ Indicates a parameter of the given
+                                                            --   name already exists.
+                    | InvalidFunctionCall SourcePos Int Int -- ^ Indicates the wrong number of
+                                                            --   arguments was passed to the
+                                                            --   function call.
+                    | MismatchedType SourcePos Id [Id]      -- ^ Indicates a type mismatch.
+                    | UndefinedFunctionCall SourcePos Id    -- ^ Indicates a function call to a
+                                                            --   non-existent funciton.
+    deriving Eq
 
 instance Show TypeException where
-    show (TypeException pos message) = show pos ++ ":\n" ++ message
+    show e = show (pos e) ++ ":\n" ++ message e
 
 -- | Extracts the source position from the exception.
 pos :: TypeException -> SourcePos
-pos (TypeException p _) = p
+pos (TypeException p _)             = p
+pos (DuplicateFunctionName p _)     = p
+pos (DuplicateParameterName p _)    = p
+pos (InvalidFunctionCall p _ _)     = p
+pos (MismatchedType p _ _)          = p
+pos (UndefinedFunctionCall p _)     = p
 
--- | Extracts the message from the exception.
+-- | Creates a human understandable message from the exception.
 message :: TypeException -> String
-message (TypeException _ m) = m
-
-
--- | @duplciateFunctionName decl@ creates a 'TypeException' indicating that a duplicate function
---   declaration @decl@ was found.
-duplicateFunctionName :: Ann.Decl SourcePos -> TypeException
-duplicateFunctionName (Ann.FunctionDecl pos (Ann.Id _ name) _ _) = TypeException pos ("duplicate function name \"" ++ name ++ "\"")
-
--- | @duplicateParameterName parameter@ creates a 'TypeException' indicating that a duplicate
---   parameter @parameter@ was found.
-duplicateParameterName :: Ann.Id SourcePos -> TypeException
-duplicateParameterName (Ann.Id pos name) = TypeException pos ("duplicate parameter name \"" ++ name ++ "\"")
---
--- | @invalidArgumentsCount received expected@ creates a 'TypeException' indicating that an
---   application call (@received@) with an invalid number of arguments was made to a function
---   expecting @expected@.
-invalidArgumentsCount :: Ann.Expr SourcePos -> Int -> TypeException
-invalidArgumentsCount (Ann.ApplicationExpr pos _ arguments) expected = TypeException pos $ intercalate " " [
-    "invalid arguments count", show $ length arguments,
+message (TypeException _ m)                         = m
+message (DuplicateFunctionName _ name)              = "duplicate function name \"" ++ name ++ "\""
+message (DuplicateParameterName _ name)             = "duplicate parameter name \"" ++ name ++ "\""
+message (InvalidFunctionCall _ received expected)   = intercalate " " [
+    "invalid arguments count", show received,
     "\nexpecting", show expected
     ]
-invalidArgumentsCount _ _ = error "internal error"
-
--- | @mismatchedType received expects@ creates a 'TypeException' indicating that one of @expects@
---   was expected.
-mismatchedType :: Ann.Type SourcePos -> [Type] -> TypeException
-mismatchedType received expects = TypeException (Ann.ann received) $ intercalate " " [
-    "unexpected type", renderOneLine $ doubleQuotes (pPrint received),
-    "\nexpecting", sentence "or" (map (renderOneLine . doubleQuotes . pPrint) expects)
+message (MismatchedType _ received expects)         = intercalate " " [
+    "unexpected type", "\"" ++ received ++ "\"",
+    "\nexpecting", sentence "or" expects
     ]
     where
-        renderOneLine   = renderStyle (style { mode = OneLineMode })
         sentence _ [x]  = x
         sentence sep xs = intercalate " " [intercalate ", " (map show $ init xs), sep, show $ last xs]
-
--- | @undefinedFunctionCall app@ creates a 'TypeException' indicating that an application call
---   (@app@) was made to an undefined function.
-undefinedFunctionCall :: Ann.Expr SourcePos -> TypeException
-undefinedFunctionCall (Ann.ApplicationExpr pos (Ann.Id _ name) _) = TypeException pos ("call to undefined function \"" ++ name ++ "\"")
-undefinedFunctionCall _ = error "internal error"
+message (UndefinedFunctionCall _ name)              = "call to undefined function \"" ++ name ++ "\""
 

@@ -45,6 +45,9 @@ import              Language.Qux.Annotated.Syntax       (simp)
 import qualified    Language.Qux.Annotated.Syntax       as Ann
 import              Language.Qux.Syntax
 
+import Text.PrettyPrint
+import Text.PrettyPrint.HughesPJClass
+
 
 -- | A type that allows collecting errors while type checking a program.
 --   Requires a 'Context' for evaluation.
@@ -96,7 +99,7 @@ check program = execCheck (checkProgram program) (context $ simp program)
 checkProgram :: Ann.Program SourcePos -> Check ()
 checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
-    | otherwise         = tell $ map duplicateFunctionName duplicates
+    | otherwise         = tell $ [DuplicateFunctionName pos name | (Ann.FunctionDecl _ (Ann.Id pos name) _ _) <- duplicates]
     where
         duplicates                      = decls \\ nubBy ((==) `on` simp . name) decls
         name (Ann.FunctionDecl _ n _ _) = n
@@ -105,7 +108,7 @@ checkProgram (Ann.Program _ _ decls)
 checkDecl :: Ann.Decl SourcePos -> Check ()
 checkDecl (Ann.FunctionDecl _ _ parameters stmts)
     | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- parameters])
-    | otherwise         = tell $ map (duplicateParameterName . snd) duplicates
+    | otherwise         = tell $ [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
     where
         duplicates = parameters \\ nubBy ((==) `on` simp . snd) parameters
 
@@ -130,14 +133,14 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
-checkExpr e@(Ann.ApplicationExpr _ name arguments)      = retrieve (simp name) >>= maybe
-    (tell [undefinedFunctionCall e] >> return (error "internal error: undefined function call has no type"))
+checkExpr (Ann.ApplicationExpr pos name arguments)      = retrieve (simp name) >>= maybe
+    (tell [UndefinedFunctionCall pos (simp name)] >> return (error "internal error: undefined function call has no type (try applying name resolution)"))
     (\types -> do
         let expected = init types
 
         zipWithM_ expectExpr arguments $ map (:[]) expected
 
-        when (length expected /= length arguments) $ tell [invalidArgumentsCount e (length expected)]
+        when (length expected /= length arguments) $ tell [InvalidFunctionCall pos (length arguments) (length expected)]
 
         return $ last types)
 checkExpr (Ann.BinaryExpr _ op lhs rhs)
@@ -193,11 +196,17 @@ expectValue value expects = (attach undefined <$> checkValue value) >>= flip exp
 expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects
     | simp received `elem` expects  = return $ simp received
-    | otherwise                     = tell [mismatchedType received expects] >> return (simp received)
+    | otherwise                     = do
+        tell [MismatchedType (Ann.ann received) (renderOneLine $ pPrint received) (map (renderOneLine . pPrint) expects)]
+
+        return $ simp received
 
 attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos BoolType         = Ann.BoolType pos
 attach pos IntType          = Ann.IntType  pos
 attach pos (ListType inner) = Ann.ListType pos (attach undefined inner)
 attach pos NilType          = Ann.NilType  pos
+
+renderOneLine :: Doc -> String
+renderOneLine = renderStyle (style { mode = OneLineMode })
 
