@@ -15,8 +15,6 @@ The "Language.Qux.Annotated.TypeChecker" and "Language.Qux.Llvm.Compiler" module
     to have all names fully resolved.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
-
 module Language.Qux.Annotated.NameResolver (
     -- * Environment
     Resolve,
@@ -113,9 +111,13 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 -- | Resolves the names of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
 resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (member $ simp name) >>= \member -> case member of
--- TODO (hjw) what is an argument was passed on a local variable access?
+-- TODO (hjw) what if an argument was passed on a local variable access?
     True    -> return $ Ann.VariableExpr pos name
-    False   -> asks module_ >>= \module_ -> return $ Ann.CallExpr pos (mangle module_ name) arguments
+    False   -> do
+        module_'    <- asks module_
+        arguments_  <- mapM resolveExpr arguments
+
+        return $ Ann.CallExpr pos (mangle module_' name) arguments_
 resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
     lhs' <- resolveExpr lhs
     rhs' <- resolveExpr rhs

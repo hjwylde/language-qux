@@ -15,8 +15,6 @@ The "Language.Qux.Annotated.TypeChecker" and "Language.Qux.Llvm.Compiler" module
     to be typed.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
-
 module Language.Qux.Annotated.TypeResolver (
     -- * Environment
     Resolve,
@@ -28,20 +26,19 @@ module Language.Qux.Annotated.TypeResolver (
 
     -- * Local context
     Locals,
-    retrieve,
 
     -- * Type resolving
     resolve, resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue,
     extractType
 ) where
 
-import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.State
 
 import              Data.List   (nub)
 import              Data.Map    (Map)
 import qualified    Data.Map    as Map
+import              Data.Maybe  (fromJust)
 
 import              Language.Qux.Annotated.Parser (SourcePos)
 import              Language.Qux.Annotated.Syntax (simp)
@@ -60,13 +57,13 @@ runResolve = runReader
 
 -- | Global context that holds function definition types.
 data Context = Context {
-    functions :: Map Id [Type] -- ^ A map of function names to parameter types.
+    functions :: Map [Id] [Type] -- ^ A map of qualified identifiers to parameter types.
     }
 
 -- | Returns a context for the given program.
 context :: Program -> Context
-context (Program _ decls) = Context {
-    functions = Map.fromList $ [(name, map fst parameters) | (FunctionDecl name parameters _) <- decls]
+context (Program module_ decls) = Context {
+    functions = Map.fromList $ [(module_ ++ [name], map fst parameters) | (FunctionDecl name parameters _) <- decls]
     }
 
 -- | An empty context.
@@ -77,17 +74,6 @@ emptyContext = Context { functions = Map.empty }
 -- | Local context.
 --   This is a map of variable names to types (e.g., parameters).
 type Locals = Map Id Type
-
--- | Retrieves the type of the given identifier.
---   Preference is placed on local variables.
---   A local variable type is a singleton list,
---   while a function type is it's parameter types and return type.
-retrieve :: MonadReader Context m => Id -> StateT Locals m (Maybe [Type])
-retrieve name = do
-    maybeLocal  <- gets $ (fmap (:[])) . (Map.lookup name)
-    maybeDef    <- asks $ (Map.lookup name) . functions
-
-    return $ maybeLocal <|> maybeDef
 
 
 -- | Resolves the types of the program, returning the modified syntax tree.
@@ -128,14 +114,8 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 
 -- | Resolves the types of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
-resolveExpr (Ann.ApplicationExpr pos name arguments)    = retrieve (simp name) >>= maybe
--- TODO (hjw): raise an exception rather than fail
-    (error "internal error: undefined function call has no type (try applying name resolution)")
-    (\types -> do
-        arguments_ <- mapM resolveExpr arguments
-
-        return $ Ann.TypedExpr pos (last types) (Ann.ApplicationExpr pos name arguments_))
-resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
+resolveExpr (Ann.ApplicationExpr _ _ _)     = error "internal error: cannot resolve the type of a non-qualified expression (try applying name resolution)"
+resolveExpr (Ann.BinaryExpr pos op lhs rhs) = do
     lhs' <- resolveExpr lhs
     rhs' <- resolveExpr rhs
 
@@ -154,8 +134,14 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
             Neq -> BoolType
 
     return $ Ann.TypedExpr pos type_ (Ann.BinaryExpr pos op lhs' rhs')
-resolveExpr (Ann.CallExpr _ _ _)                        = error "internal error: type resolution for call expression not implemented"
-resolveExpr (Ann.ListExpr pos elements)                 = do
+resolveExpr (Ann.CallExpr pos id arguments) = asks (Map.lookup (map simp id) . functions) >>= maybe
+-- TODO (hjw): raise an exception rather than fail
+    (error "internal error: undefined function call has no type")
+    (\types -> do
+        arguments_ <- mapM resolveExpr arguments
+
+        return $ Ann.TypedExpr pos (last types) (Ann.CallExpr pos id arguments_))
+resolveExpr (Ann.ListExpr pos elements)     = do
     elements' <- mapM resolveExpr elements
 
     let types = map extractType elements'
@@ -163,13 +149,13 @@ resolveExpr (Ann.ListExpr pos elements)                 = do
     case length (nub types) == 1 of
         True    -> return $ Ann.TypedExpr pos (ListType $ head types) (Ann.ListExpr pos elements')
         False   -> error "internal error: top type not implemented"
-resolveExpr e@(Ann.TypedExpr _ _ _)                     = return e
-resolveExpr (Ann.UnaryExpr pos op expr)                 = do
+resolveExpr e@(Ann.TypedExpr _ _ _)         = return e
+resolveExpr (Ann.UnaryExpr pos op expr)     = do
     expr' <- resolveExpr expr
 
     return $ Ann.TypedExpr pos IntType (Ann.UnaryExpr pos op expr')
-resolveExpr e@(Ann.ValueExpr pos value)                 = return $ Ann.TypedExpr pos (resolveValue value) e
-resolveExpr (Ann.VariableExpr _ _)                      = error "internal error: type resolution for variable expression not implemented"
+resolveExpr e@(Ann.ValueExpr pos value)     = return $ Ann.TypedExpr pos (resolveValue value) e
+resolveExpr e@(Ann.VariableExpr pos name)   = gets (fromJust . Map.lookup (simp name)) >>= \type_ -> return $ Ann.TypedExpr pos type_ e
 
 -- | Resolves the type of a value.
 resolveValue :: Value -> Type

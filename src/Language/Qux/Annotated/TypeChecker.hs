@@ -24,7 +24,6 @@ module Language.Qux.Annotated.TypeChecker (
 
     -- * Local context
     Locals,
-    retrieve,
 
     -- * Type checking
     check, checkProgram, checkDecl, checkStmt, checkExpr
@@ -106,8 +105,15 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
-checkExpr (Ann.TypedExpr _ type_ (Ann.ApplicationExpr pos name arguments))  = retrieve (simp name) >>= maybe
-    (error "internal error: undefined function call has no type (try applying name resolution)")
+checkExpr (Ann.TypedExpr _ type_ (Ann.BinaryExpr _ op lhs rhs))
+    | op `elem` [Acc]                       = expectExpr_ lhs [ListType type_] >> expectExpr_ rhs [IntType] >> return type_
+    | op `elem` [Mul, Div, Mod, Add, Sub]   = expectExpr_ lhs [type_] >> expectExpr rhs [type_]
+    | op `elem` [Lt, Lte, Gt, Gte]          = expectExpr_ lhs [IntType] >> expectExpr_ rhs [IntType] >> return type_
+    | op `elem` [Eq, Neq]                   = checkExpr lhs >>= expectExpr rhs . (:[]) >> return type_
+    | otherwise                             = error $ "internal error: type checking for \"" ++ show op ++ "\" not implemented"
+checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = asks (Map.lookup (map simp id) . functions) >>= maybe
+-- TODO (hjw): raise an exception rather than fail
+    (error "internal error: undefined function call has no type")
     (\types -> do
         let expected = init types
 
@@ -116,13 +122,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.ApplicationExpr pos name arguments))  = re
         when (length expected /= length arguments) $ tell [InvalidFunctionCall pos (length arguments) (length expected)]
 
         return type_)
-checkExpr (Ann.TypedExpr _ type_ (Ann.BinaryExpr _ op lhs rhs))
-    | op `elem` [Acc]                       = expectExpr_ lhs [ListType type_] >> expectExpr_ rhs [IntType] >> return type_
-    | op `elem` [Mul, Div, Mod, Add, Sub]   = expectExpr_ lhs [type_] >> expectExpr rhs [type_]
-    | op `elem` [Lt, Lte, Gt, Gte]          = expectExpr_ lhs [IntType] >> expectExpr_ rhs [IntType] >> return type_
-    | op `elem` [Eq, Neq]                   = checkExpr lhs >>= expectExpr rhs . (:[]) >> return type_
-    | otherwise                             = error $ "internal error: type checking for \"" ++ show op ++ "\" not implemented"
-checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))                 = do
+checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))         = do
     let (ListType inner) = type_
 
     mapM_ (flip expectExpr [inner]) elements
@@ -132,8 +132,9 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
     | op `elem` [Len]               = expectExpr_ expr [ListType $ error "internal error: top type not implemented"] >> return type_
     | op `elem` [Neg]               = expectExpr expr [type_]
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
-checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr _ _))                       = return type_
-checkExpr _                                                                 = error "internal error: cannot check the type of a non-typed expression (try applying type resolution)"
+checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr _ _))               = return type_
+checkExpr (Ann.TypedExpr _ type_ (Ann.VariableExpr _ _))            = return type_
+checkExpr _                                                         = error "internal error: cannot check the type of a non-typed expression (try applying type resolution)"
 
 
 expectExpr :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check Type

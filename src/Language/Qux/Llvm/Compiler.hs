@@ -19,10 +19,8 @@ import Control.Monad.Reader
 import Control.Monad.State
 
 import              Data.List   (intercalate)
-import              Data.Map    (Map)
 import qualified    Data.Map    as Map
 import              Data.Maybe
-import              Data.Tuple  (swap)
 
 import Language.Qux.Llvm.Builder    as B
 import Language.Qux.Syntax          as Qux
@@ -38,14 +36,12 @@ import Prelude hiding (EQ)
 
 
 data Context = Context {
-    functions   :: Map Id [Qux.Type],
-    locals      :: Map Id Qux.Type
-    } deriving Show
+    module_ :: [Id]
+    }
 
 context :: Program -> Context
-context (Program _ decls) = Context {
-    functions   = Map.fromList [(name, map fst parameters) | (FunctionDecl name parameters _) <- decls],
-    locals      = Map.empty
+context (Program m _) = Context {
+    module_ = m
     }
 
 
@@ -65,11 +61,12 @@ compileProgram (Program module_ decls) = do
         }
 
 compileDecl :: Decl -> Reader Context Definition
-compileDecl (FunctionDecl name' parameters stmts) = local (\r -> r { locals = Map.fromList $ map swap (init parameters) }) $ do
-    blockBuilder <- execStateT (mapM_ compileStmt stmts) initialBuilder
+compileDecl (FunctionDecl name parameters stmts) = do
+    module_'        <- asks module_
+    blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
     return $ GlobalDefinition functionDefaults {
-        G.name          = Name name',
+        G.name          = Name $ mangle (module_' ++ [name]),
         G.returnType    = compileType $ fst (last parameters),
         G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init parameters], False),
         basicBlocks     = map (\b -> BasicBlock (B.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
@@ -124,26 +121,7 @@ compileStmt (WhileStmt condition stmts)             = do
     terminate $ Do Llvm.Unreachable { metadata' = [] }
 
 compileExpr :: Expr -> StateT Builder (Reader Context) Operand
-compileExpr (TypedExpr type_ (ApplicationExpr name' arguments)) = do
-    operands <- mapM compileExpr arguments
-
-    n <- freeName
-
-    asks (Map.member name' . locals) >>= \isLocal -> case isLocal of
-        True    -> return $ LocalReference (compileType type_) (Name name')
-        False   -> do
-            append $ Name n := Call {
-                isTailCall = False,
-                Llvm.callingConvention = C,
-                Llvm.returnAttributes = [],
-                function = Right $ ConstantOperand $ GlobalReference (compileType type_) (Name name'),
-                arguments = [(op, []) | op <- operands],
-                Llvm.functionAttributes = [],
-                metadata = []
-                }
-
-            return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))           = do
+compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))   = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
 
@@ -184,8 +162,24 @@ compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))           = do
         Qux.Neq -> do
             append $ Name n := Llvm.ICmp { Llvm.iPredicate = NE, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
             return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr _ (ListExpr _))                          = error "internal error: compilation for lists not implemented"
-compileExpr (TypedExpr type_ (UnaryExpr op expr))               = do
+compileExpr (TypedExpr type_ (CallExpr id arguments))   = do
+    operands <- mapM compileExpr arguments
+
+    n <- freeName
+
+    append $ Name n := Call {
+        isTailCall = False,
+        Llvm.callingConvention = C,
+        Llvm.returnAttributes = [],
+        function = Right $ ConstantOperand $ GlobalReference (compileType type_) (Name $ mangle id),
+        arguments = [(op, []) | op <- operands],
+        Llvm.functionAttributes = [],
+        metadata = []
+        }
+
+    return $ LocalReference (compileType type_) (Name n)
+compileExpr (TypedExpr _ (ListExpr _))                  = error "internal error: compilation for lists not implemented"
+compileExpr (TypedExpr type_ (UnaryExpr op expr))       = do
     operand <- compileExpr expr
 
     n <- freeName
@@ -198,8 +192,9 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))               = do
             }
 
     return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr _ (ValueExpr value))                     = return $ ConstantOperand (compileValue value)
-compileExpr _                                                   = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
+compileExpr (TypedExpr _ (ValueExpr value))             = return $ ConstantOperand (compileValue value)
+compileExpr (TypedExpr type_ (VariableExpr name))       = return $ LocalReference (compileType type_) (Name name)
+compileExpr _                                           = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
 compileValue :: Value -> Constant
 compileValue (BoolValue bool)   = Int {
@@ -218,4 +213,10 @@ compileType BoolType        = i1
 compileType IntType         = i32
 compileType (ListType _)    = error "internal error: compilation for list types not implemented"
 compileType NilType         = error "internal error: compilation for nil types not implemented"
+
+
+-- Helper methods
+
+mangle :: [Id] -> String
+mangle id = intercalate "_" id
 
