@@ -80,13 +80,16 @@ instance Pretty (Program a) where
 -- | A declaration.
 data Decl a = FunctionDecl a (Id a) [(Type a, Id a)] [Stmt a]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
                                                                 --   The return type is treated as a parameter with id '@'.
+            | ImportDecl a [Id a]                               -- ^ A module identifier to import.
     deriving (Eq, Functor, Show)
 
 instance Annotated Decl where
-    ann (FunctionDecl a _ _ _) = a
+    ann (FunctionDecl a _ _ _)  = a
+    ann (ImportDecl a _)        = a
 
 instance Simplifiable (Decl a) S.Decl where
     simp (FunctionDecl _ name parameters stmts) = S.FunctionDecl (simp name) (map (tmap simp simp) parameters) (map simp stmts)
+    simp (ImportDecl _ id) = S.ImportDecl $ map simp id
 
 instance Pretty (Decl a) where
     pPrint = pPrint . simp

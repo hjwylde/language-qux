@@ -26,7 +26,7 @@ module Language.Qux.Annotated.TypeChecker (
     Locals,
 
     -- * Type checking
-    check, checkProgram, checkDecl, checkStmt, checkExpr
+    checkProgram, checkDecl, checkStmt, checkExpr
 ) where
 
 import Control.Monad.Reader
@@ -62,19 +62,16 @@ execCheck :: Check a -> Context -> [TypeException]
 execCheck check context = execWriter $ runReaderT check context
 
 
--- | Type checks the program, returning any errors that are found.
---   A result of @[]@ indicates the program is well-typed.
-check :: Ann.Program SourcePos -> [TypeException]
-check program = execCheck (checkProgram program) (context $ simp program)
-
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
 checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
     | otherwise         = tell $ [DuplicateFunctionName pos name | (Ann.FunctionDecl _ (Ann.Id pos name) _ _) <- duplicates]
     where
-        duplicates                      = decls \\ nubBy ((==) `on` simp . name) decls
-        name (Ann.FunctionDecl _ n _ _) = n
+        duplicates                  = functionDecls \\ nubBy ((==) `on` name . simp) functionDecls
+        functionDecls               = [decl | decl@(Ann.FunctionDecl {}) <- decls]
+        name (FunctionDecl n _ _)   = n
+        name _                      = error "internal error: cannot get name of a non-function declaration"
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
@@ -83,6 +80,7 @@ checkDecl (Ann.FunctionDecl _ _ parameters stmts)
     | otherwise         = tell $ [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
     where
         duplicates = parameters \\ nubBy ((==) `on` simp . snd) parameters
+checkDecl _                                         = return ()
 
 checkBlock :: [Ann.Stmt SourcePos] -> StateT Locals Check ()
 checkBlock = mapM_ checkStmt
@@ -132,8 +130,8 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
     | op `elem` [Len]               = expectExpr_ expr [ListType $ error "internal error: top type not implemented"] >> return type_
     | op `elem` [Neg]               = expectExpr expr [type_]
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
-checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr _ _))               = return type_
-checkExpr (Ann.TypedExpr _ type_ (Ann.VariableExpr _ _))            = return type_
+checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr {}))                = return type_
+checkExpr (Ann.TypedExpr _ type_ (Ann.VariableExpr {}))             = return type_
 checkExpr _                                                         = error "internal error: cannot check the type of a non-typed expression (try applying type resolution)"
 
 

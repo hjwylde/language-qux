@@ -28,7 +28,7 @@ module Language.Qux.Annotated.NameResolver (
     Locals,
 
     -- * Name resolving
-    resolve, resolveProgram, resolveDecl, resolveStmt, resolveExpr
+    resolveProgram, resolveDecl, resolveStmt, resolveExpr
 ) where
 
 import Control.Monad.Reader
@@ -54,27 +54,31 @@ runResolve = runReader
 
 -- | Global context that holds the current module identifier.
 data Context = Context {
-    module_ :: [Id] -- ^ The current module identifier.
+    module_     :: [Id],    -- ^ The current module identifier.
+    functions   :: [[Id]]   -- ^ A list of available qualified function identifiers.
+                            --   This includes the current module's functions and imported
+                            --   functions.
     }
+    deriving (Eq, Show)
 
 -- | Returns a context for the given program.
-context :: Program -> Context
-context (Program m _) = Context {
-    module_ = m
+--   Requires the main program being resolved and the contextual programs (to resolve imports from).
+context :: Program -> [Program] -> Context
+context program@(Program m decls) programs = Context {
+    module_     = m,
+    functions   = [m' ++ [name] | (Program m' decls') <- program:programs, m' `elem` imports, (FunctionDecl name _ _) <- decls']
     }
+    where
+        imports = m:[id | (ImportDecl id) <- decls]
 
-mangle :: [Id] -> Ann.Id a -> [Ann.Id a]
-mangle module_ id@(Ann.Id a _) = map (Ann.Id a) module_ ++ [id]
+functionsFromName :: Id -> Context -> [[Id]]
+functionsFromName name = (filter $ (==) name . last) . functions
 
 
 -- | Local context.
 --   This is a set of local variable names.
 type Locals = Set Id
 
-
--- | Resolves the names of the program, returning the modified syntax tree.
-resolve :: Ann.Program SourcePos -> Ann.Program SourcePos
-resolve program = runResolve (resolveProgram program) (context $ simp program)
 
 -- | Resolves the names of a program.
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)
@@ -86,6 +90,7 @@ resolveDecl (Ann.FunctionDecl pos name parameters stmts) = do
     stmts' <- evalStateT (resolveBlock stmts) (Set.fromList $ map (simp . snd) parameters)
 
     return $ Ann.FunctionDecl pos name parameters stmts'
+resolveDecl decl = return decl
 
 resolveBlock :: [Ann.Stmt SourcePos] -> StateT Locals Resolve [Ann.Stmt SourcePos]
 resolveBlock = mapM resolveStmt
@@ -111,19 +116,25 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 -- | Resolves the names of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
 resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (member $ simp name) >>= \member -> case member of
--- TODO (hjw) what if an argument was passed on a local variable access?
-    True    -> return $ Ann.VariableExpr pos name
+    True    -> do
+        -- TODO (hjw): what if an argument was passed on a local variable access?
+        when (length arguments /= 0) $ error "internal error: arguments passed to a local variable access"
+
+        return $ Ann.VariableExpr pos name
     False   -> do
-        module_'    <- asks module_
+        ids         <- asks $ functionsFromName (simp name)
         arguments_  <- mapM resolveExpr arguments
 
-        return $ Ann.CallExpr pos (mangle module_' name) arguments_
+        -- TODO (hjw): what if there is more than one exporter of the function?
+        when (length ids /= 1) $ error ("internal error: function \"" ++ simp name ++ "\" is exported by multiple modules")
+
+        return $ Ann.CallExpr pos (map (Ann.Id $ Ann.ann name) (head ids)) arguments_
 resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
     lhs' <- resolveExpr lhs
     rhs' <- resolveExpr rhs
 
     return $ Ann.BinaryExpr pos op lhs' rhs'
-resolveExpr e@(Ann.CallExpr _ _ _)                      = return e
+resolveExpr e@(Ann.CallExpr {})                         = return e
 resolveExpr (Ann.ListExpr pos elements)                 = do
     elements' <- mapM resolveExpr elements
 
@@ -136,6 +147,6 @@ resolveExpr (Ann.UnaryExpr pos op expr)                 = do
     expr' <- resolveExpr expr
 
     return $ Ann.UnaryExpr pos op expr'
-resolveExpr e@(Ann.ValueExpr _ _)                       = return e
-resolveExpr e@(Ann.VariableExpr _ _)                    = return e
+resolveExpr e@(Ann.ValueExpr {})                        = return e
+resolveExpr e@(Ann.VariableExpr {})                     = return e
 

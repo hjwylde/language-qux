@@ -39,8 +39,9 @@ instance Pretty Program where
 
 
 -- | A declaration.
-data Decl = FunctionDecl Id [(Type, Id)] [Stmt] -- ^ A name, list of ('Type', 'Id') parameters and statements.
-                                                --   The return type is treated as a parameter with id '@'.
+data Decl   = FunctionDecl Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
+                                                    --   The return type is treated as a parameter with id '@'.
+            | ImportDecl [Id]                       -- ^ A module identifier to import.
     deriving (Eq, Show)
 
 instance Pretty Decl where
@@ -52,6 +53,7 @@ instance Pretty Decl where
             parametersDoc = fsep $ punctuate
                 (space <> text "->")
                 (map (\(t, p) -> pPrint t <+> (if p == "@" then empty else text p)) parameters)
+    pPrint (ImportDecl id)                      = text "import" <+> hcat (punctuate (char '.') (map text id))
 
 
 -- | A statement.

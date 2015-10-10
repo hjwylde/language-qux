@@ -28,6 +28,7 @@ data Builder = Builder {
     blocks          :: Map Name BlockBuilder,
     counter         :: Word
     }
+    deriving (Eq, Show)
 
 initialBuilder :: Builder
 initialBuilder = Builder {
@@ -41,6 +42,7 @@ data BlockBuilder = BlockBuilder {
     stack :: [Named Instruction],
     term :: Maybe (Named Terminator)
     }
+    deriving (Eq, Show)
 
 defaultBlockBuilder :: BlockBuilder
 defaultBlockBuilder = BlockBuilder {

@@ -28,8 +28,7 @@ module Language.Qux.Annotated.TypeResolver (
     Locals,
 
     -- * Type resolving
-    resolve, resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue,
-    extractType
+    resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue, extractType
 ) where
 
 import Control.Monad.Reader
@@ -59,11 +58,12 @@ runResolve = runReader
 data Context = Context {
     functions :: Map [Id] [Type] -- ^ A map of qualified identifiers to parameter types.
     }
+    deriving (Eq, Show)
 
--- | Returns a context for the given program.
-context :: Program -> Context
-context (Program module_ decls) = Context {
-    functions = Map.fromList $ [(module_ ++ [name], map fst parameters) | (FunctionDecl name parameters _) <- decls]
+-- | Returns a context for the given programs.
+context :: [Program] -> Context
+context programs = Context {
+    functions = Map.fromList $ [(module_ ++ [name], map fst parameters) | (Program module_ decls) <- programs, (FunctionDecl name parameters _) <- decls]
     }
 
 -- | An empty context.
@@ -76,20 +76,17 @@ emptyContext = Context { functions = Map.empty }
 type Locals = Map Id Type
 
 
--- | Resolves the types of the program, returning the modified syntax tree.
-resolve :: Ann.Program SourcePos -> Ann.Program SourcePos
-resolve program = runResolve (resolveProgram program) (context $ simp program)
-
 -- | Resolves the types of a program.
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)
 resolveProgram (Ann.Program pos module_ decls) = mapM resolveDecl decls >>= \decls' -> return $ Ann.Program pos module_ decls'
 
 -- | Resolves the types of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
-resolveDecl (Ann.FunctionDecl pos name parameters stmts) = do
+resolveDecl (Ann.FunctionDecl pos name parameters stmts)    = do
     stmts' <- evalStateT (resolveBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- parameters])
 
     return $ Ann.FunctionDecl pos name parameters stmts'
+resolveDecl decl                                            = return decl
 
 resolveBlock :: [Ann.Stmt SourcePos] -> StateT Locals Resolve [Ann.Stmt SourcePos]
 resolveBlock = mapM resolveStmt
@@ -114,7 +111,7 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 
 -- | Resolves the types of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
-resolveExpr (Ann.ApplicationExpr _ _ _)     = error "internal error: cannot resolve the type of a non-qualified expression (try applying name resolution)"
+resolveExpr (Ann.ApplicationExpr {})        = error "internal error: cannot resolve the type of a non-qualified expression (try applying name resolution)"
 resolveExpr (Ann.BinaryExpr pos op lhs rhs) = do
     lhs' <- resolveExpr lhs
     rhs' <- resolveExpr rhs
@@ -149,7 +146,7 @@ resolveExpr (Ann.ListExpr pos elements)     = do
     case length (nub types) == 1 of
         True    -> return $ Ann.TypedExpr pos (ListType $ head types) (Ann.ListExpr pos elements')
         False   -> error "internal error: top type not implemented"
-resolveExpr e@(Ann.TypedExpr _ _ _)         = return e
+resolveExpr e@(Ann.TypedExpr {})            = return e
 resolveExpr (Ann.UnaryExpr pos op expr)     = do
     expr' <- resolveExpr expr
 

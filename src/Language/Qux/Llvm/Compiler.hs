@@ -38,6 +38,7 @@ import Prelude hiding (EQ)
 data Context = Context {
     module_ :: [Id]
     }
+    deriving (Eq, Show)
 
 context :: Program -> Context
 context (Program m _) = Context {
@@ -53,7 +54,7 @@ compile program = runReader (compileProgram program) (context program)
 
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
-    definitions <- mapM compileDecl decls
+    definitions <- mapM compileDecl [decl | decl@(FunctionDecl {}) <- decls]
 
     return $ defaultModule {
         moduleName = intercalate "." module_,
@@ -61,7 +62,7 @@ compileProgram (Program module_ decls) = do
         }
 
 compileDecl :: Decl -> Reader Context Definition
-compileDecl (FunctionDecl name parameters stmts) = do
+compileDecl (FunctionDecl name parameters stmts)    = do
     module_'        <- asks module_
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
@@ -71,6 +72,7 @@ compileDecl (FunctionDecl name parameters stmts) = do
         G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init parameters], False),
         basicBlocks     = map (\b -> BasicBlock (B.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
         }
+compileDecl _                                       = error "internal error: cannot compile an import declaration"
 
 compileStmt :: Stmt -> StateT Builder (Reader Context) ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do

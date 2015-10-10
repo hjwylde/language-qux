@@ -65,19 +65,27 @@ program = do
 
 -- | 'Decl' parser.
 decl :: Parser (Decl SourcePos)
-decl = do
-    pos <- getPosition
+decl = choice [functionDecl, importDecl] <?> "declaration"
+    where
+        functionDecl    = do
+            pos <- getPosition
 
-    name <- id_
-    symbol_ "::"
-    parameters <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
-    returnType <- type_
-    colon
-    indented
-    stmts <- block stmt
+            name <- id_
+            symbol_ "::"
+            parameters <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
+            returnType <- type_
+            colon
+            indented
+            stmts <- block stmt
 
-    return $ FunctionDecl pos name (parameters ++ [(returnType, Id pos "@")]) stmts
-    <?> "function declaration"
+            return $ FunctionDecl pos name (parameters ++ [(returnType, Id pos "@")]) stmts
+        importDecl      = do
+            pos <- getPosition
+
+            reserved "import"
+            id <- sepBy1 id_ dot
+
+            return $ ImportDecl pos id
 
 -- | 'Stmt' parser.
 stmt :: Parser (Stmt SourcePos)
