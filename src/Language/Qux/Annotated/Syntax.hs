@@ -57,7 +57,7 @@ instance Annotated Id where
     ann (Id a _) = a
 
 instance Simplifiable (Id a) [Char] where
-    simp (Id _ id_) = id_
+    simp (Id _ id) = id
 
 instance Pretty (Id a) where
     pPrint = text . simp
@@ -113,30 +113,38 @@ instance Pretty (Stmt a) where
 
 
 -- | A complex expression.
-data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name to call and the arguments to pass as parameters.
+data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name (unresolved) to call
+                                                        --   and the arguments to pass as parameters.
             | BinaryExpr a BinaryOp (Expr a) (Expr a)   -- ^ A binary operation.
+            | CallExpr a [Id a] [Expr a]                -- ^ A function id (resolved) to call and
+                                                        --   the arguments to pass as parameters.
             | ListExpr a [Expr a]                       -- ^ A list expression.
             | TypedExpr a S.Type (Expr a)               -- ^ A typed expression.
                                                         --   See "Language.Qux.Annotated.TypeResolver".
             | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
             | ValueExpr a Value                         -- ^ A raw value.
+            | VariableExpr a (Id a)                     -- ^ A local variable access.
     deriving (Eq, Functor, Show)
 
 instance Annotated Expr where
     ann (ApplicationExpr a _ _) = a
     ann (BinaryExpr a _ _ _)    = a
+    ann (CallExpr a _ _)        = a
     ann (ListExpr a _)          = a
     ann (TypedExpr a _ _)       = a
     ann (UnaryExpr a _ _)       = a
     ann (ValueExpr a _)         = a
+    ann (VariableExpr a _)      = a
 
 instance Simplifiable (Expr a) S.Expr where
-    simp (ApplicationExpr _ id arguments)   = S.ApplicationExpr (simp id) (map simp arguments)
+    simp (ApplicationExpr _ name arguments) = S.ApplicationExpr (simp name) (map simp arguments)
     simp (BinaryExpr _ op lhs rhs)          = S.BinaryExpr op (simp lhs) (simp rhs)
+    simp (CallExpr _ id arguments)          = S.CallExpr (map simp id) (map simp arguments)
     simp (ListExpr _ elements)              = S.ListExpr (map simp elements)
     simp (TypedExpr _ type_ expr)           = S.TypedExpr type_ (simp expr)
     simp (UnaryExpr _ op expr)              = S.UnaryExpr op (simp expr)
     simp (ValueExpr _ value)                = S.ValueExpr value
+    simp (VariableExpr _ name)              = S.VariableExpr $ simp name
 
 instance Pretty (Expr a) where
     pPrint = pPrint . simp

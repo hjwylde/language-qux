@@ -21,6 +21,7 @@ library
     hs-source-dirs: src/
     exposed-modules:
         Language.Qux.Annotated.Exception,
+        Language.Qux.Annotated.NameResolver,
         Language.Qux.Annotated.Parser,
         Language.Qux.Annotated.Syntax,
         Language.Qux.Annotated.TypeChecker,

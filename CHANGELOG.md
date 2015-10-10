@@ -2,12 +2,13 @@
 
 #### Upcoming in master
 
+* Added in name resolution.
+
 #### v0.2.0.0
 
 * Added type checking.
 * Added required `module` statement.
-* Removed the interpreter. Given that this project is currently in pre-release, there may be
-  breaking changes between minor version increments.
+* Removed the interpreter.
 * Added in compilation to LLVM (v3.4) for integers and booleans.
 
 #### v0.1.1.3

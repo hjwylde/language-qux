@@ -129,6 +129,7 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 -- | Resolves the types of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
 resolveExpr (Ann.ApplicationExpr pos name arguments)    = retrieve (simp name) >>= maybe
+-- TODO (hjw): raise an exception rather than fail
     (error "internal error: undefined function call has no type (try applying name resolution)")
     (\types -> do
         arguments_ <- mapM resolveExpr arguments
@@ -153,6 +154,7 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
             Neq -> BoolType
 
     return $ Ann.TypedExpr pos type_ (Ann.BinaryExpr pos op lhs' rhs')
+resolveExpr (Ann.CallExpr _ _ _)                        = error "internal error: type resolution for call expression not implemented"
 resolveExpr (Ann.ListExpr pos elements)                 = do
     elements' <- mapM resolveExpr elements
 
@@ -167,6 +169,7 @@ resolveExpr (Ann.UnaryExpr pos op expr)                 = do
 
     return $ Ann.TypedExpr pos IntType (Ann.UnaryExpr pos op expr')
 resolveExpr e@(Ann.ValueExpr pos value)                 = return $ Ann.TypedExpr pos (resolveValue value) e
+resolveExpr (Ann.VariableExpr _ _)                      = error "internal error: type resolution for variable expression not implemented"
 
 -- | Resolves the type of a value.
 resolveValue :: Value -> Type

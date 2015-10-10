@@ -18,6 +18,7 @@ module Language.Qux.Syntax (
 ) where
 
 import Data.Char (toLower)
+import Data.List (intercalate)
 
 import Text.PrettyPrint
 import Text.PrettyPrint.HughesPJClass
@@ -74,24 +75,29 @@ instance Pretty Stmt where
 
 
 -- | A complex expression.
-data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name to call and the arguments to pass
-                                            --   as parameters.
+data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name (unresolved) to call and the
+                                            --   arguments to pass as parameters.
             | BinaryExpr BinaryOp Expr Expr -- ^ A binary operation.
+            | CallExpr [Id] [Expr]          -- ^ A function identifier (resolved) to call and the
+                                            --   arguments to pass as parameters.
             | ListExpr [Expr]               -- ^ A list expression.
             | TypedExpr Type Expr           -- ^ A typed expression.
                                             --   See "Language.Qux.Annotated.TypeResolver".
             | UnaryExpr UnaryOp Expr        -- ^ A unary operation.
             | ValueExpr Value               -- ^ A raw value.
+            | VariableExpr Id               -- ^ A local variable access.
     deriving (Eq, Show)
 
 instance Pretty Expr where
     pPrint (ApplicationExpr name arguments) = text name <+> fsep (map pPrint arguments)
     pPrint (BinaryExpr op lhs rhs)          = parens $ fsep [pPrint lhs, pPrint op, pPrint rhs]
+    pPrint (CallExpr id arguments)          = text (intercalate "." id) <+> fsep (map pPrint arguments)
     pPrint (ListExpr elements)              = brackets $ fsep (punctuate comma (map pPrint elements))
     pPrint (TypedExpr _ expr)               = pPrint expr
     pPrint (UnaryExpr Len expr)             = char '|' <> pPrint expr <> char '|'
     pPrint (UnaryExpr op expr)              = pPrint op <> pPrint expr
     pPrint (ValueExpr value)                = pPrint value
+    pPrint (VariableExpr name)              = text name
 
 
 -- | A binary operator.
