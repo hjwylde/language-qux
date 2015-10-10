@@ -14,6 +14,7 @@ Instances of 'Simplifiable' are provided for simplifying a node down to it's una
     'Pretty' for pretty printing.
 -}
 
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -50,7 +51,7 @@ class Simplifiable n r | n -> r where
 
 -- | An identifier. Identifiers should match '[a-z_][a-zA-Z0-9_']*'.
 data Id a = Id a String
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 instance Annotated Id where
     ann (Id a _) = a
@@ -64,7 +65,7 @@ instance Pretty (Id a) where
 
 -- | A program is a module identifier (list of 'Id''s) and a list of declarations.
 data Program a = Program a [Id a] [Decl a]
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 instance Annotated Program where
     ann (Program a _ _) = a
@@ -79,7 +80,7 @@ instance Pretty (Program a) where
 -- | A declaration.
 data Decl a = FunctionDecl a (Id a) [(Type a, Id a)] [Stmt a]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
                                                                 --   The return type is treated as a parameter with id '@'.
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 instance Annotated Decl where
     ann (FunctionDecl a _ _ _) = a
@@ -95,7 +96,7 @@ instance Pretty (Decl a) where
 data Stmt a = IfStmt a (Expr a) [Stmt a] [Stmt a]   -- ^ A condition, true block and false block of statements.
             | ReturnStmt a (Expr a)                 -- ^ An expression.
             | WhileStmt a (Expr a) [Stmt a]         -- ^ A condition and block of statements.
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 instance Annotated Stmt where
     ann (IfStmt a _ _ _)    = a
@@ -117,7 +118,7 @@ data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name to 
             | ListExpr a [Expr a]                       -- ^ A list expression.
             | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
             | ValueExpr a Value                         -- ^ A raw value.
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 instance Annotated Expr where
     ann (ApplicationExpr a _ _) = a
@@ -142,7 +143,7 @@ data Type a = BoolType a
             | IntType a
             | ListType a (Type a) -- ^ A list type with an inner type.
             | NilType a
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 instance Annotated Type where
     ann (BoolType a)    = a
