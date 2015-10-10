@@ -26,7 +26,7 @@ module Language.Qux.Annotated.TypeChecker (
     Locals,
 
     -- * Type checking
-    check, checkProgram, checkDecl, checkStmt, checkExpr, checkValue
+    check, checkProgram, checkDecl, checkStmt, checkExpr
 ) where
 
 import Control.Applicative
@@ -125,7 +125,7 @@ checkStmt (Ann.IfStmt _ condition trueStmts falseStmts)   = do
 checkStmt (Ann.ReturnStmt _ expr)                         = do
     expected <- gets (! "@")
 
-    void $ expectExpr expr [expected]
+    expectExpr_ expr [expected]
 checkStmt (Ann.WhileStmt _ condition stmts)               = do
     expectExpr_ condition [BoolType]
 
@@ -133,7 +133,7 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
-checkExpr (Ann.ApplicationExpr pos name arguments)      = retrieve (simp name) >>= maybe
+checkExpr (Ann.TypedExpr _ type_ (Ann.ApplicationExpr pos name arguments))  = retrieve (simp name) >>= maybe
     (error "internal error: undefined function call has no type (try applying name resolution)")
     (\types -> do
         let expected = init types
@@ -142,44 +142,25 @@ checkExpr (Ann.ApplicationExpr pos name arguments)      = retrieve (simp name) >
 
         when (length expected /= length arguments) $ tell [InvalidFunctionCall pos (length arguments) (length expected)]
 
-        return $ last types)
-checkExpr (Ann.BinaryExpr _ op lhs rhs)
-    | op `elem` [Acc]               = do
-        list <- expectExpr lhs [ListType $ error "internal error: top type not implemented"]
+        return type_)
+checkExpr (Ann.TypedExpr _ type_ (Ann.BinaryExpr _ op lhs rhs))
+    | op `elem` [Acc]                       = expectExpr_ lhs [ListType type_] >> expectExpr_ rhs [IntType] >> return type_
+    | op `elem` [Mul, Div, Mod, Add, Sub]   = expectExpr_ lhs [type_] >> expectExpr rhs [type_]
+    | op `elem` [Lt, Lte, Gt, Gte]          = expectExpr_ lhs [IntType] >> expectExpr_ rhs [IntType] >> return type_
+    | op `elem` [Eq, Neq]                   = checkExpr lhs >>= expectExpr rhs . (:[]) >> return type_
+    | otherwise                             = error $ "internal error: type checking for \"" ++ show op ++ "\" not implemented"
+checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))                 = do
+    let (ListType inner) = type_
 
-        let (ListType inner) = list in
-            expectExpr rhs [IntType] >> return inner
-    | op `elem` [Mul, Div, Mod]     = expectExpr lhs [IntType] >> expectExpr rhs [IntType]
-    | op `elem` [Add, Sub]          = expectExpr lhs [IntType, ListType $ error "internal error: top type not implemented"] >>= (expectExpr rhs) . (:[])
-    | op `elem` [Lt, Lte, Gt, Gte]  = expectExpr lhs [IntType] >> expectExpr rhs [IntType] >> return BoolType
-    | op `elem` [Eq, Neq]           = ((:[]) <$> checkExpr lhs >>= expectExpr rhs) >> return BoolType
+    mapM_ (flip expectExpr [inner]) elements
+
+    return type_
+checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
+    | op `elem` [Len]               = expectExpr_ expr [ListType $ error "internal error: top type not implemented"] >> return type_
+    | op `elem` [Neg]               = expectExpr expr [type_]
     | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
-checkExpr (Ann.ListExpr _ [])                           = return $ ListType (error "internal error: top type not implemented")
-checkExpr (Ann.ListExpr _ elements)                     = do
-    expected <- checkExpr $ head elements
-
-    mapM_ (flip expectExpr [expected]) (tail elements)
-
-    return $ ListType expected
-checkExpr (Ann.TypedExpr _ _ _)                         = error "internal error: typed expr not implemented"
-checkExpr (Ann.UnaryExpr _ op expr)
-    | op `elem` [Len]               = expectExpr expr [ListType $ error "internal error: top type not implemented"] >> return IntType
-    | op `elem` [Neg]               = expectExpr expr [IntType]
-    | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
-checkExpr (Ann.ValueExpr _ value)                       = lift $ checkValue value
-
--- | Type checks a value.
-checkValue :: Value -> Check Type
-checkValue (BoolValue _)        = return BoolType
-checkValue (IntValue _)         = return IntType
-checkValue (ListValue [])       = return $ ListType (error "internal error: top type not implemented")
-checkValue (ListValue elements) = do
-    expected <- checkValue $ head elements
-
-    mapM_ (flip expectValue [expected]) (tail elements)
-
-    return $ ListType expected
-checkValue NilValue             = return NilType
+checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr _ _))                       = return type_
+checkExpr _                                                                 = error "internal error: cannot check the type of a non-typed expression (try applying type resolution)"
 
 
 expectExpr :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check Type
@@ -190,9 +171,6 @@ expectExpr expr expects = do
 
 expectExpr_ :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check ()
 expectExpr_ = fmap void . expectExpr
-
-expectValue :: Value -> [Type] -> Check Type
-expectValue value expects = (attach undefined <$> checkValue value) >>= flip expectType expects
 
 expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects
