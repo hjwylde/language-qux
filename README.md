@@ -5,8 +5,8 @@
 
 Qux is an experimental language developed from the ground up with the aim of supporting extended
     static checks at compile time.
-This package provides tools for working with it (parsing, printing and type checking)
-    within Haskell code.
+This package provides tools for working with it (parsing, compiling, pretty printing and type
+    checking) within Haskell code.
 
 If you're interested in actually compiling Qux files, see [here](https://github.com/qux-lang/qux)
     for the binary.

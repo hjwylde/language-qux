@@ -6,6 +6,7 @@
 * Added required `module` statement.
 * Removed the interpreter. Given that this project is currently in pre-release, there may be
   breaking changes between minor version increments.
+* Added in compilation to LLVM (v3.4) for integers and booleans.
 
 #### v0.1.1.3
 

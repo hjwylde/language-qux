@@ -129,12 +129,12 @@ data UnaryOp    = Len -- ^ List length.
                 | Neg -- ^ Negation.
     deriving (Eq, Show)
 
--- | A value is considered to be in it's normal form.
 instance Pretty UnaryOp where
     pPrint Len = text "length"
     pPrint Neg = text "-"
 
 
+-- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
             | IntValue Integer  -- ^ An unbounded integer.
             | ListValue [Value] -- ^ A normalised list value.

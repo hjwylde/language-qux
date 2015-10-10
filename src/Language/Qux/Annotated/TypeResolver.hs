@@ -10,9 +10,12 @@ Maintainer  : public@hjwylde.com
 Type resolving functions that transform the abstract syntax tree to a typed one.
 
 These functions will transform every 'Ann.Expr' into an 'Ann.TypedExpr' and return the transformed
-tree.
-The "Language.Qux.Annotated.TypeChecker" module requires the tree to be typed.
+    tree.
+The "Language.Qux.Annotated.TypeChecker" and "Language.Qux.Llvm.Compiler" modules require the tree
+    to be typed.
 -}
+
+{-# LANGUAGE FlexibleContexts #-}
 
 module Language.Qux.Annotated.TypeResolver (
     -- * Environment
@@ -25,6 +28,7 @@ module Language.Qux.Annotated.TypeResolver (
 
     -- * Local context
     Locals,
+    retrieve,
 
     -- * Type resolving
     resolve, resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue,
@@ -74,7 +78,11 @@ emptyContext = Context { functions = Map.empty }
 --   This is a map of variable names to types (e.g., parameters).
 type Locals = Map Id Type
 
-retrieve :: Id -> StateT Locals Resolve (Maybe [Type])
+-- | Retrieves the type of the given identifier.
+--   Preference is placed on local variables.
+--   A local variable type is a singleton list,
+--   while a function type is it's parameter types and return type.
+retrieve :: MonadReader Context m => Id -> StateT Locals m (Maybe [Type])
 retrieve name = do
     maybeLocal  <- gets $ (fmap (:[])) . (Map.lookup name)
     maybeDef    <- asks $ (Map.lookup name) . functions

@@ -24,25 +24,26 @@ module Language.Qux.Annotated.TypeChecker (
 
     -- * Local context
     Locals,
+    retrieve,
 
     -- * Type checking
     check, checkProgram, checkDecl, checkStmt, checkExpr
 ) where
 
-import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
 import              Data.Function   (on)
 import              Data.List       ((\\), nubBy)
-import              Data.Map        (Map, (!))
+import              Data.Map        ((!))
 import qualified    Data.Map        as Map
 
 import              Language.Qux.Annotated.Exception
 import              Language.Qux.Annotated.Parser       (SourcePos)
 import              Language.Qux.Annotated.Syntax       (simp)
 import qualified    Language.Qux.Annotated.Syntax       as Ann
+import              Language.Qux.Annotated.TypeResolver
 import              Language.Qux.Syntax
 
 import Text.PrettyPrint
@@ -60,34 +61,6 @@ runCheck check context = runWriter $ runReaderT check context
 -- | Runs the given check with the context and extracts the exceptions.
 execCheck :: Check a -> Context -> [TypeException]
 execCheck check context = execWriter $ runReaderT check context
-
-
--- | Global context that holds function definition types.
-data Context = Context {
-    functions :: Map Id [Type] -- ^ A map of function names to parameter types.
-    }
-
--- | Returns a context for the given program.
-context :: Program -> Context
-context (Program _ decls) = Context {
-    functions = Map.fromList $ [(name, map fst parameters) | (FunctionDecl name parameters _) <- decls]
-    }
-
--- | An empty context.
-emptyContext :: Context
-emptyContext = Context { functions = Map.empty }
-
-
--- | Local context.
---   This is a map of variable names to types (e.g., parameters).
-type Locals = Map Id Type
-
-retrieve :: Id -> StateT Locals Check (Maybe [Type])
-retrieve name = do
-    maybeLocal  <- gets $ (fmap (:[])) . (Map.lookup name)
-    maybeDef    <- asks $ (Map.lookup name) . functions
-
-    return $ maybeLocal <|> maybeDef
 
 
 -- | Type checks the program, returning any errors that are found.
