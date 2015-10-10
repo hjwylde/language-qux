@@ -2,6 +2,8 @@
 
 #### Upcoming in master
 
+#### v0.2.0.0
+
 * Added type checking.
 * Added required `module` statement.
 * Removed the interpreter. Given that this project is currently in pre-release, there may be
