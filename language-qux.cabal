@@ -26,6 +26,7 @@ library
         Language.Qux.Annotated.Syntax,
         Language.Qux.Annotated.TypeChecker,
         Language.Qux.Annotated.TypeResolver,
+        Language.Qux.Context,
         Language.Qux.Llvm.Compiler,
         Language.Qux.Syntax,
         Language.Qux.Version

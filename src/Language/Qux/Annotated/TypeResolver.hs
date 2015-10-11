@@ -22,7 +22,7 @@ module Language.Qux.Annotated.TypeResolver (
 
     -- * Global context
     Context(..),
-    context, emptyContext,
+    baseContext, context, emptyContext,
 
     -- * Local context
     Locals,
@@ -42,6 +42,7 @@ import              Data.Maybe  (fromJust)
 import              Language.Qux.Annotated.Parser (SourcePos)
 import              Language.Qux.Annotated.Syntax (simp)
 import qualified    Language.Qux.Annotated.Syntax as Ann
+import              Language.Qux.Context
 import              Language.Qux.Syntax
 
 
@@ -52,23 +53,6 @@ type Resolve = Reader Context
 -- | Runs the given resolve with the context.
 runResolve :: Resolve a -> Context -> a
 runResolve = runReader
-
-
--- | Global context that holds function definition types.
-data Context = Context {
-    functions :: Map [Id] [Type] -- ^ A map of qualified identifiers to parameter types.
-    }
-    deriving (Eq, Show)
-
--- | Returns a context for the given programs.
-context :: [Program] -> Context
-context programs = Context {
-    functions = Map.fromList $ [(module_ ++ [name], map fst parameters) | (Program module_ decls) <- programs, (FunctionDecl name parameters _) <- decls]
-    }
-
--- | An empty context.
-emptyContext :: Context
-emptyContext = Context { functions = Map.empty }
 
 
 -- | Local context.

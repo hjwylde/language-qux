@@ -3,6 +3,7 @@
 #### Upcoming in master
 
 * Added in name resolution.
+* Added in import statements.
 
 #### v0.2.0.0
 

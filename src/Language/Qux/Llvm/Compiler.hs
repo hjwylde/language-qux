@@ -11,8 +11,12 @@ A compiler that takes a 'Program' and outputs a LLVM 'Module'.
 -}
 
 module Language.Qux.Llvm.Compiler (
+    -- * Global context
+    Context(..),
+    baseContext, context, emptyContext,
+
     -- * Compilation
-    compile
+    compileProgram
 ) where
 
 import Control.Monad.Reader
@@ -22,6 +26,7 @@ import              Data.List   (intercalate)
 import qualified    Data.Map    as Map
 import              Data.Maybe
 
+import Language.Qux.Context
 import Language.Qux.Llvm.Builder    as B
 import Language.Qux.Syntax          as Qux
 
@@ -35,23 +40,9 @@ import LLVM.General.AST.Type
 import Prelude hiding (EQ)
 
 
-data Context = Context {
-    module_ :: [Id]
-    }
-    deriving (Eq, Show)
-
-context :: Program -> Context
-context (Program m _) = Context {
-    module_ = m
-    }
-
-
 -- | Compiles the program into a LLVM 'Module'.
 --   Generally speaking, compilation is done using the defaults.
 --   Any exceptions to this will be clearly noted.
-compile :: Program -> Module
-compile program = runReader (compileProgram program) (context program)
-
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
     definitions <- mapM compileDecl [decl | decl@(FunctionDecl {}) <- decls]

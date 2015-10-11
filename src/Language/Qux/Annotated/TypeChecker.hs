@@ -20,7 +20,7 @@ module Language.Qux.Annotated.TypeChecker (
 
     -- * Global context
     Context(..),
-    context, emptyContext,
+    baseContext, context, emptyContext,
 
     -- * Local context
     Locals,
