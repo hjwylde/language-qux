@@ -35,7 +35,6 @@ import LLVM.General.AST.CallingConvention
 import LLVM.General.AST.Constant            hiding (exact, nsw, nuw, operand0, operand1)
 import LLVM.General.AST.Global              as G
 import LLVM.General.AST.IntegerPredicate
-import LLVM.General.AST.Linkage
 import LLVM.General.AST.Type
 
 import Prelude hiding (EQ)
@@ -49,8 +48,7 @@ compileProgram (Program module_ decls) = do
     declarations    <- map (\(id, type_) -> GlobalDefinition functionDefaults {
         G.name          = Name $ mangle id,
         G.returnType    = compileType $ fst (last type_),
-        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
-        G.linkage       = ExternWeak
+        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
         }) . Map.toList <$> asks externalFunctions
     definitions     <- mapM compileDecl [decl | decl@(FunctionDecl {}) <- decls]
 
