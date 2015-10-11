@@ -88,7 +88,7 @@ instance Annotated Decl where
     ann (ImportDecl a _)        = a
 
 instance Simplifiable (Decl a) S.Decl where
-    simp (FunctionDecl _ name parameters stmts) = S.FunctionDecl (simp name) (map (tmap simp simp) parameters) (map simp stmts)
+    simp (FunctionDecl _ name type_ stmts) = S.FunctionDecl (simp name) (map (tmap simp simp) type_) (map simp stmts)
     simp (ImportDecl _ id) = S.ImportDecl $ map simp id
 
 instance Pretty (Decl a) where

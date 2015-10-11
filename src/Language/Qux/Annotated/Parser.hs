@@ -72,13 +72,13 @@ decl = choice [functionDecl, importDecl] <?> "declaration"
 
             name <- id_
             symbol_ "::"
-            parameters <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
+            parameterTypes <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
             returnType <- type_
             colon
             indented
             stmts <- block stmt
 
-            return $ FunctionDecl pos name (parameters ++ [(returnType, Id pos "@")]) stmts
+            return $ FunctionDecl pos name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
         importDecl      = do
             pos <- getPosition
 

@@ -14,9 +14,10 @@ module Language.Qux.Context (
     -- * Context
     Context(..),
     baseContext, context, emptyContext,
+    localFunctions, externalFunctions
 ) where
 
-import              Data.Map    (Map)
+import              Data.Map    (Map, filterWithKey)
 import qualified    Data.Map    as Map
 
 import Language.Qux.Syntax
@@ -24,8 +25,9 @@ import Language.Qux.Syntax
 
 -- | Global context that holds function definition types.
 data Context = Context {
-    module_     :: [Id],            -- ^ The current module identifier.
-    functions   :: Map [Id] [Type]  -- ^ A map of qualified identifiers to parameter types.
+    module_     :: [Id],                    -- ^ The current module identifier.
+    functions   :: Map [Id] [(Type, Id)]    -- ^ A map of qualified identifiers to function types
+                                            --   (including parameter names).
     }
     deriving (Eq, Show)
 
@@ -35,7 +37,7 @@ data Context = Context {
 baseContext :: [Program] -> Context
 baseContext programs = Context {
     module_     = [],
-    functions   = Map.fromList $ [(module_ ++ [name], map fst parameters) | (Program module_ decls) <- programs, (FunctionDecl name parameters _) <- decls]
+    functions   = Map.fromList $ [(module_ ++ [name], type_) | (Program module_ decls) <- programs, (FunctionDecl name type_ _) <- decls]
     }
 
 -- | Returns a specific context for the given program.
@@ -45,4 +47,16 @@ context (Program m _) programs = (baseContext programs) { module_ = m }
 -- | An empty context.
 emptyContext :: Context
 emptyContext = Context { module_ = [], functions = Map.empty }
+
+-- | Gets the local functions from the context.
+localFunctions :: Context -> Map [Id] [(Type, Id)]
+localFunctions context = filterWithKey (\id _ -> init id == m) (functions context)
+    where
+        m = module_ context
+
+-- | Gets the external functions from the context.
+externalFunctions :: Context -> Map [Id] [(Type, Id)]
+externalFunctions context = filterWithKey (\id _ -> init id /= m) (functions context)
+    where
+        m = module_ context
 

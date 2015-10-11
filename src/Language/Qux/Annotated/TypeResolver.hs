@@ -66,10 +66,10 @@ resolveProgram (Ann.Program pos module_ decls) = mapM resolveDecl decls >>= \dec
 
 -- | Resolves the types of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
-resolveDecl (Ann.FunctionDecl pos name parameters stmts)    = do
-    stmts' <- evalStateT (resolveBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- parameters])
+resolveDecl (Ann.FunctionDecl pos name type_ stmts)    = do
+    stmts' <- evalStateT (resolveBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
 
-    return $ Ann.FunctionDecl pos name parameters stmts'
+    return $ Ann.FunctionDecl pos name type_ stmts'
 resolveDecl decl                                            = return decl
 
 resolveBlock :: [Ann.Stmt SourcePos] -> StateT Locals Resolve [Ann.Stmt SourcePos]
@@ -118,10 +118,10 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs) = do
 resolveExpr (Ann.CallExpr pos id arguments) = asks (Map.lookup (map simp id) . functions) >>= maybe
 -- TODO (hjw): raise an exception rather than fail
     (error "internal error: undefined function call has no type")
-    (\types -> do
+    (\type_ -> do
         arguments_ <- mapM resolveExpr arguments
 
-        return $ Ann.TypedExpr pos (last types) (Ann.CallExpr pos id arguments_))
+        return $ Ann.TypedExpr pos (fst $ last type_) (Ann.CallExpr pos id arguments_))
 resolveExpr (Ann.ListExpr pos elements)     = do
     elements' <- mapM resolveExpr elements
 

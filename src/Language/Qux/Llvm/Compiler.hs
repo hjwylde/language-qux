@@ -35,6 +35,7 @@ import LLVM.General.AST.CallingConvention
 import LLVM.General.AST.Constant            hiding (exact, nsw, nuw, operand0, operand1)
 import LLVM.General.AST.Global              as G
 import LLVM.General.AST.IntegerPredicate
+import LLVM.General.AST.Linkage
 import LLVM.General.AST.Type
 
 import Prelude hiding (EQ)
@@ -45,22 +46,28 @@ import Prelude hiding (EQ)
 --   Any exceptions to this will be clearly noted.
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
-    definitions <- mapM compileDecl [decl | decl@(FunctionDecl {}) <- decls]
+    declarations    <- map (\(id, type_) -> GlobalDefinition functionDefaults {
+        G.name          = Name $ mangle id,
+        G.returnType    = compileType $ fst (last type_),
+        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
+        G.linkage       = ExternWeak
+        }) . Map.toList <$> asks externalFunctions
+    definitions     <- mapM compileDecl [decl | decl@(FunctionDecl {}) <- decls]
 
     return $ defaultModule {
         moduleName = intercalate "." module_,
-        moduleDefinitions = definitions
+        moduleDefinitions = declarations ++ definitions
         }
 
 compileDecl :: Decl -> Reader Context Definition
-compileDecl (FunctionDecl name parameters stmts)    = do
+compileDecl (FunctionDecl name type_ stmts)    = do
     module_'        <- asks module_
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
     return $ GlobalDefinition functionDefaults {
         G.name          = Name $ mangle (module_' ++ [name]),
-        G.returnType    = compileType $ fst (last parameters),
-        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init parameters], False),
+        G.returnType    = compileType $ fst (last type_),
+        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
         basicBlocks     = map (\b -> BasicBlock (B.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
         }
 compileDecl _                                       = error "internal error: cannot compile an import declaration"

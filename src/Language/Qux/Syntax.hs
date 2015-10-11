@@ -45,14 +45,14 @@ data Decl   = FunctionDecl Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type'
     deriving (Eq, Show)
 
 instance Pretty Decl where
-    pPrint (FunctionDecl name parameters stmts) = vcat [
-        text name <+> text "::" <+> parametersDoc <> colon,
+    pPrint (FunctionDecl name type_ stmts) = vcat [
+        text name <+> text "::" <+> functionTypeDoc <> colon,
         nest 4 (block stmts)
         ]
         where
-            parametersDoc = fsep $ punctuate
+            functionTypeDoc = fsep $ punctuate
                 (space <> text "->")
-                (map (\(t, p) -> pPrint t <+> (if p == "@" then empty else text p)) parameters)
+                (map (\(t, p) -> pPrint t <+> (if p == "@" then empty else text p)) type_)
     pPrint (ImportDecl id)                      = text "import" <+> hcat (punctuate (char '.') (map text id))
 
 

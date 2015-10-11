@@ -75,11 +75,11 @@ checkProgram (Ann.Program _ _ decls)
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
-checkDecl (Ann.FunctionDecl _ _ parameters stmts)
-    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- parameters])
+checkDecl (Ann.FunctionDecl _ _ type_ stmts)
+    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
     | otherwise         = tell $ [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
     where
-        duplicates = parameters \\ nubBy ((==) `on` simp . snd) parameters
+        duplicates = type_ \\ nubBy ((==) `on` simp . snd) type_
 checkDecl _                                         = return ()
 
 checkBlock :: [Ann.Stmt SourcePos] -> StateT Locals Check ()
@@ -113,7 +113,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = asks (Map.
 -- TODO (hjw): raise an exception rather than fail
     (error "internal error: undefined function call has no type")
     (\types -> do
-        let expected = init types
+        let expected = map fst (init types)
 
         zipWithM_ expectExpr arguments $ map (:[]) expected
 
