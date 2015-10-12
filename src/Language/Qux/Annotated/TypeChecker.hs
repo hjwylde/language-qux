@@ -107,8 +107,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.BinaryExpr _ op lhs rhs))
     | op `elem` [Eq, Neq]                   = checkExpr lhs >>= expectExpr rhs . (:[]) >> return type_
     | otherwise                             = error $ "internal error: type checking for \"" ++ show op ++ "\" not implemented"
 checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = asks (Map.lookup (map simp id) . functions) >>= maybe
--- TODO (hjw): raise an exception rather than fail
-    (error "internal error: undefined function call has no type")
+    (error "internal error: undefined function call has no type (try applying name resolution)")
     (\types -> do
         let expected = map fst (init types)
 
