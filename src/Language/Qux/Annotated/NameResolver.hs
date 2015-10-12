@@ -66,7 +66,7 @@ data Context = Context {
 context :: Program -> [Program] -> Context
 context program@(Program m decls) programs = Context {
     module_     = m,
-    functions   = [m' ++ [name] | (Program m' decls') <- program:programs, m' `elem` imports, (FunctionDecl name _ _) <- decls']
+    functions   = [m' ++ [name] | (Program m' decls') <- program:programs, m' `elem` imports, (FunctionDecl _ name _ _) <- decls']
     }
     where
         imports = m:[id | (ImportDecl id) <- decls]
@@ -86,11 +86,11 @@ resolveProgram (Ann.Program pos module_ decls) = mapM resolveDecl decls >>= \dec
 
 -- | Resolves the names of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
-resolveDecl (Ann.FunctionDecl pos name type_ stmts) = do
+resolveDecl (Ann.FunctionDecl pos attrs name type_ stmts)   = do
     stmts' <- evalStateT (resolveBlock stmts) (Set.fromList $ map (simp . snd) type_)
 
-    return $ Ann.FunctionDecl pos name type_ stmts'
-resolveDecl decl = return decl
+    return $ Ann.FunctionDecl pos attrs name type_ stmts'
+resolveDecl decl                                            = return decl
 
 resolveBlock :: [Ann.Stmt SourcePos] -> StateT Locals Resolve [Ann.Stmt SourcePos]
 resolveBlock = mapM resolveStmt

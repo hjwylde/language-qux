@@ -66,16 +66,16 @@ execCheck check context = execWriter $ runReaderT check context
 checkProgram :: Ann.Program SourcePos -> Check ()
 checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
-    | otherwise         = tell $ [DuplicateFunctionName pos name | (Ann.FunctionDecl _ (Ann.Id pos name) _ _) <- duplicates]
+    | otherwise         = tell $ [DuplicateFunctionName pos name | (Ann.FunctionDecl _ _ (Ann.Id pos name) _ _) <- duplicates]
     where
         duplicates                  = functionDecls \\ nubBy ((==) `on` name . simp) functionDecls
         functionDecls               = [decl | decl@(Ann.FunctionDecl {}) <- decls]
-        name (FunctionDecl n _ _)   = n
+        name (FunctionDecl _ n _ _) = n
         name _                      = error "internal error: cannot get name of a non-function declaration"
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
-checkDecl (Ann.FunctionDecl _ _ type_ stmts)
+checkDecl (Ann.FunctionDecl _ _ _ type_ stmts)
     | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
     | otherwise         = tell $ [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
     where

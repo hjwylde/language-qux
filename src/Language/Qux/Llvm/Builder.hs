@@ -38,9 +38,9 @@ initialBuilder = Builder {
     }
 
 data BlockBuilder = BlockBuilder {
-    name :: Name,
-    stack :: [Named Instruction],
-    term :: Maybe (Named Terminator)
+    name    :: Name,
+    stack   :: [Named Instruction],
+    term    :: Maybe (Named Terminator)
     }
     deriving (Eq, Show)
 

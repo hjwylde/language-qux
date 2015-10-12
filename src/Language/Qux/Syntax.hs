@@ -14,7 +14,8 @@ Instances of 'Pretty' are provided for pretty printing.
 
 module Language.Qux.Syntax (
     -- * Nodes
-    Id, Program(..), Decl(..), Stmt(..), Expr(..), BinaryOp(..), UnaryOp(..), Value(..), Type(..)
+    Id, Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), BinaryOp(..),
+    UnaryOp(..), Value(..), Type(..)
 ) where
 
 import Data.Char (toLower)
@@ -39,21 +40,33 @@ instance Pretty Program where
 
 
 -- | A declaration.
-data Decl   = FunctionDecl Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
-                                                    --   The return type is treated as a parameter with id '@'.
-            | ImportDecl [Id]                       -- ^ A module identifier to import.
+data Decl   = FunctionDecl [FunctionAttribute] Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
+                                                                        --   The return type is treated as a parameter with id '@'.
+            | ImportDecl [Id]                                           -- ^ A module identifier to import.
     deriving (Eq, Show)
 
 instance Pretty Decl where
-    pPrint (FunctionDecl name type_ stmts) = vcat [
-        text name <+> text "::" <+> functionTypeDoc <> colon,
+    pPrint (FunctionDecl attrs name type_ [])       = declarationDoc attrs name type_
+    pPrint (FunctionDecl attrs name type_ stmts)    = vcat [
+        declarationDoc attrs name type_ <> colon,
         nest 4 (block stmts)
         ]
-        where
-            functionTypeDoc = fsep $ punctuate
-                (space <> text "->")
-                (map (\(t, p) -> pPrint t <+> (if p == "@" then empty else text p)) type_)
-    pPrint (ImportDecl id)                      = text "import" <+> hcat (punctuate (char '.') (map text id))
+    pPrint (ImportDecl id)                          = text "import" <+> hcat (punctuate (char '.') (map text id))
+
+declarationDoc :: [FunctionAttribute] -> Id -> [(Type, Id)] -> Doc
+declarationDoc attrs name type_ = hsep $ map pPrint attrs ++ [text name, text "::", functionTypeDoc]
+    where
+        functionTypeDoc = fsep $ punctuate
+            (text " ->")
+            [pPrint t <+> if p == "@" then empty else text p | (t, p) <- type_]
+
+
+-- | A function attribute.
+data FunctionAttribute = External
+    deriving (Eq, Show)
+
+instance Pretty FunctionAttribute where
+    pPrint = text . (map toLower) . show
 
 
 -- | A statement.

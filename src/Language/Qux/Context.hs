@@ -14,7 +14,7 @@ module Language.Qux.Context (
     -- * Context
     Context(..),
     baseContext, context, emptyContext,
-    localFunctions, externalFunctions
+    localFunctions, importedFunctions
 ) where
 
 import              Data.Map    (Map, filterWithKey)
@@ -37,7 +37,7 @@ data Context = Context {
 baseContext :: [Program] -> Context
 baseContext programs = Context {
     module_     = [],
-    functions   = Map.fromList $ [(module_ ++ [name], type_) | (Program module_ decls) <- programs, (FunctionDecl name type_ _) <- decls]
+    functions   = Map.fromList $ [(module_ ++ [name], type_) | (Program module_ decls) <- programs, (FunctionDecl _ name type_ _) <- decls]
     }
 
 -- | Returns a specific context for the given program.
@@ -54,9 +54,9 @@ localFunctions context = filterWithKey (\id _ -> init id == m) (functions contex
     where
         m = module_ context
 
--- | Gets the external functions from the context.
-externalFunctions :: Context -> Map [Id] [(Type, Id)]
-externalFunctions context = filterWithKey (\id _ -> init id /= m) (functions context)
+-- | Gets the imported functions from the context.
+importedFunctions :: Context -> Map [Id] [(Type, Id)]
+importedFunctions context = filterWithKey (\id _ -> init id /= m) (functions context)
     where
         m = module_ context
 

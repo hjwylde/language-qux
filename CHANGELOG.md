@@ -4,6 +4,7 @@
 
 * Added in name resolution.
 * Added in import statements.
+* Added in `external` function attribute.
 
 #### v0.2.0.0
 

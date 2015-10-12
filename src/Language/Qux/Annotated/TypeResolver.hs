@@ -66,10 +66,10 @@ resolveProgram (Ann.Program pos module_ decls) = mapM resolveDecl decls >>= \dec
 
 -- | Resolves the types of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
-resolveDecl (Ann.FunctionDecl pos name type_ stmts)    = do
+resolveDecl (Ann.FunctionDecl pos attrs name type_ stmts)   = do
     stmts' <- evalStateT (resolveBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
 
-    return $ Ann.FunctionDecl pos name type_ stmts'
+    return $ Ann.FunctionDecl pos attrs name type_ stmts'
 resolveDecl decl                                            = return decl
 
 resolveBlock :: [Ann.Stmt SourcePos] -> StateT Locals Resolve [Ann.Stmt SourcePos]

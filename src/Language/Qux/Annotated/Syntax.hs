@@ -25,7 +25,7 @@ module Language.Qux.Annotated.Syntax (
     Simplifiable(..),
 
     -- * Annotated nodes
-    Id(..), Program(..), Decl(..), Stmt(..), Expr(..), Type(..),
+    Id(..), Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), Type(..),
 
     -- * Regular nodes
     BinaryOp(..), UnaryOp(..), Value(..)
@@ -78,20 +78,34 @@ instance Pretty (Program a) where
 
 
 -- | A declaration.
-data Decl a = FunctionDecl a (Id a) [(Type a, Id a)] [Stmt a]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
-                                                                --   The return type is treated as a parameter with id '@'.
-            | ImportDecl a [Id a]                               -- ^ A module identifier to import.
+data Decl a = FunctionDecl a [FunctionAttribute a] (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list of ('Type', 'Id') parameters and statements.
+                                                                                    --   The return type is treated as a parameter with id '@'.
+            | ImportDecl a [Id a]                                                   -- ^ A module identifier to import.
     deriving (Eq, Functor, Show)
 
 instance Annotated Decl where
-    ann (FunctionDecl a _ _ _)  = a
+    ann (FunctionDecl a _ _ _ _)  = a
     ann (ImportDecl a _)        = a
 
 instance Simplifiable (Decl a) S.Decl where
-    simp (FunctionDecl _ name type_ stmts) = S.FunctionDecl (simp name) (map (tmap simp simp) type_) (map simp stmts)
+    simp (FunctionDecl _ attrs name type_ stmts) = S.FunctionDecl (map simp attrs) (simp name) (map (tmap simp simp) type_) (map simp stmts)
     simp (ImportDecl _ id) = S.ImportDecl $ map simp id
 
 instance Pretty (Decl a) where
+    pPrint = pPrint . simp
+
+
+-- | A function attribute.
+data FunctionAttribute a = External a
+    deriving (Eq, Functor, Show)
+
+instance Annotated FunctionAttribute where
+    ann (External a) = a
+
+instance Simplifiable (FunctionAttribute a) S.FunctionAttribute where
+    simp (External _) = S.External
+
+instance Pretty (FunctionAttribute a) where
     pPrint = pPrint . simp
 
 

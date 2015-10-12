@@ -49,16 +49,23 @@ compileProgram (Program module_ decls) = do
         G.name          = Name $ mangle id,
         G.returnType    = compileType $ fst (last type_),
         G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
-        }) . Map.toList <$> asks externalFunctions
-    definitions     <- mapM compileDecl [decl | decl@(FunctionDecl {}) <- decls]
+        }) . Map.toList <$> asks importedFunctions
+
+    let externals = [GlobalDefinition functionDefaults {
+        G.name          = Name $ mangle (module_ ++ [name]),
+        G.returnType    = compileType $ fst (last type_),
+        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+        } | (FunctionDecl attrs name type_ _) <- decls, External `elem` attrs]
+
+    definitions     <- mapM compileDecl [decl | decl@(FunctionDecl attrs _ _ _) <- decls, External `notElem` attrs]
 
     return $ defaultModule {
-        moduleName = intercalate "." module_,
-        moduleDefinitions = declarations ++ definitions
+        moduleName          = intercalate "." module_,
+        moduleDefinitions   = declarations ++ externals ++ definitions
         }
 
 compileDecl :: Decl -> Reader Context Definition
-compileDecl (FunctionDecl name type_ stmts)    = do
+compileDecl (FunctionDecl _ name type_ stmts)   = do
     module_'        <- asks module_
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
@@ -68,7 +75,7 @@ compileDecl (FunctionDecl name type_ stmts)    = do
         G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
         basicBlocks     = map (\b -> BasicBlock (B.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
         }
-compileDecl _                                       = error "internal error: cannot compile an import declaration"
+compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 
 compileStmt :: Stmt -> StateT Builder (Reader Context) ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do
