@@ -32,11 +32,14 @@ There are a few core tasks in mind that need to be achieved before v1 can come a
 
 * Key language features (assignment, strings, packages and imports).
 * Compilation to LLVM.
+
+Of course, there will be minor tasks to accompany this release, such as documentation on the language features.
+The above merely mark the core functionality required!
+
+### Tasks for v2
+
 * Pre- and post-conditions on methods (using the `requires` and `ensures` keywords).
 * Compilation and verification of method contracts.
 * An intermediary language that retains contract information (see the
     [quux language](https://github.com/qux-lang/language-quux "quux")).
-
-Of course, there will be minor tasks to accompany this release, such as documentation on the language features.
-The above merely mark the core functionality required!
 
