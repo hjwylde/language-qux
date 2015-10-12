@@ -85,6 +85,7 @@ data ResolveException   = ResolveException SourcePos String         -- ^ A gener
                         | AmbiguousFunctionCall SourcePos Id [[Id]] -- ^ Indicates multiple exporters of a function.
                         | DuplicateImport SourcePos [Id]            -- ^ Indicates duplicate import found.
                         | ImportNotFound SourcePos [Id]             -- ^ Indicates import not found.
+                        | InvalidVariableAccess SourcePos Id        -- ^ Indicates arguments passed on local variable access.
                         | UndefinedFunctionCall SourcePos Id        -- ^ Indicates function not found.
     deriving (Eq, Typeable)
 
@@ -93,6 +94,7 @@ instance CompilerException ResolveException where
     pos (AmbiguousFunctionCall p _ _)   = p
     pos (DuplicateImport p _)           = p
     pos (ImportNotFound p _)            = p
+    pos (InvalidVariableAccess p _)     = p
     pos (UndefinedFunctionCall p _)     = p
 
     message (ResolveException _ m)                      = m
@@ -101,7 +103,8 @@ instance CompilerException ResolveException where
         "\nexported from", sentence "and" (map (intercalate ".") exporters)
         ]
     message (DuplicateImport _ id)                      = "duplicate import \"" ++ intercalate "." id ++ "\""
-    message (ImportNotFound _ id)                       = "imported module does not exist \"" ++ intercalate "." id ++ "\""
+    message (ImportNotFound _ id)                       = "cannot find module \"" ++ intercalate "." id ++ "\""
+    message (InvalidVariableAccess _ name)              = "arguments passed when accessing local variable \"" ++ name ++ "\""
     message (UndefinedFunctionCall _ name)              = "call to undefined function \"" ++ name ++ "\""
 
 instance Exception ResolveException

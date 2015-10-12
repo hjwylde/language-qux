@@ -142,8 +142,7 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
 resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (member $ simp name) >>= \member -> case member of
     True    -> do
-        -- TODO (hjw): what if an argument was passed on a local variable access?
-        when (length arguments /= 0) $ error "internal error: arguments passed to a local variable access"
+        when (length arguments /= 0) $ tell [InvalidVariableAccess pos (simp name)]
 
         return $ Ann.VariableExpr pos name
     False   -> do
