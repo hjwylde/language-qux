@@ -28,7 +28,7 @@ module Language.Qux.Annotated.TypeResolver (
     Locals,
 
     -- * Type resolving
-    resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue, extractType
+    resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue, extractType,
 ) where
 
 import Control.Monad.Reader

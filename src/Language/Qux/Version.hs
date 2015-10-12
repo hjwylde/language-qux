@@ -13,7 +13,7 @@ Haskell constant of the language version.
 module Language.Qux.Version (
     -- * Version
     -- | The language version.
-    version
+    version,
 ) where
 
 import Paths_language_qux (version)

@@ -15,7 +15,7 @@ Instances of 'Pretty' are provided for pretty printing.
 module Language.Qux.Syntax (
     -- * Nodes
     Id, Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), BinaryOp(..),
-    UnaryOp(..), Value(..), Type(..)
+    UnaryOp(..), Value(..), Type(..),
 ) where
 
 import Data.Char (toLower)

@@ -20,7 +20,7 @@ module Language.Qux.Annotated.Parser (
     sourceName, sourceLine, sourceColumn,
 
     -- * Parsers
-    id_, program, decl, stmt, expr, value, type_
+    id_, program, decl, stmt, expr, value, type_,
 ) where
 
 import Control.Monad.State

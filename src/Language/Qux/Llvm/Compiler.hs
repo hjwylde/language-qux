@@ -16,7 +16,7 @@ module Language.Qux.Llvm.Compiler (
     baseContext, context, emptyContext,
 
     -- * Compilation
-    compileProgram
+    compileProgram,
 ) where
 
 import Control.Monad.Reader

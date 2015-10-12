@@ -28,7 +28,7 @@ module Language.Qux.Annotated.NameResolver (
     Locals,
 
     -- * Name resolving
-    resolveProgram, resolveDecl, resolveStmt, resolveExpr
+    resolveProgram, resolveDecl, resolveStmt, resolveExpr,
 ) where
 
 import Control.Monad.Reader

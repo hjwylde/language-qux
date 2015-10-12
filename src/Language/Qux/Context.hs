@@ -14,7 +14,7 @@ module Language.Qux.Context (
     -- * Context
     Context(..),
     baseContext, context, emptyContext,
-    localFunctions, importedFunctions
+    localFunctions, importedFunctions,
 ) where
 
 import              Data.Map    (Map, filterWithKey)

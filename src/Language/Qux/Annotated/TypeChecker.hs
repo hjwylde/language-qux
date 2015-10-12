@@ -26,7 +26,7 @@ module Language.Qux.Annotated.TypeChecker (
     Locals,
 
     -- * Type checking
-    checkProgram, checkDecl, checkStmt, checkExpr
+    checkProgram, checkDecl, checkStmt, checkExpr,
 ) where
 
 import Control.Monad.Reader

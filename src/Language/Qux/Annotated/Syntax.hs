@@ -28,7 +28,7 @@ module Language.Qux.Annotated.Syntax (
     Id(..), Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), Type(..),
 
     -- * Regular nodes
-    BinaryOp(..), UnaryOp(..), Value(..)
+    BinaryOp(..), UnaryOp(..), Value(..),
 ) where
 
 import              Language.Qux.Syntax (BinaryOp(..), UnaryOp(..), Value(..))
