@@ -33,10 +33,12 @@ module Language.Qux.Annotated.NameResolver (
 
 import Control.Monad.Reader
 import Control.Monad.State
+import Control.Monad.Writer
 
 import              Data.Set (Set, member)
 import qualified    Data.Set as Set
 
+import              Language.Qux.Annotated.Exception
 import              Language.Qux.Annotated.Parser (SourcePos)
 import              Language.Qux.Annotated.Syntax (simp)
 import qualified    Language.Qux.Annotated.Syntax as Ann
@@ -45,11 +47,11 @@ import              Language.Qux.Syntax
 
 -- | A type that allows resolving types.
 --   Requires a 'Context' for evaluation.
-type Resolve = Reader Context
+type Resolve = ReaderT Context (Writer [ResolveException])
 
 -- | Runs the given resolve with the context.
-runResolve :: Resolve a -> Context -> a
-runResolve = runReader
+runResolve :: Resolve a -> Context -> (a, [ResolveException])
+runResolve resolve context = runWriter $ runReaderT resolve context
 
 
 -- | Global context that holds the current module identifier.
