@@ -45,9 +45,6 @@ import qualified    Language.Qux.Annotated.Syntax       as Ann
 import              Language.Qux.Annotated.TypeResolver
 import              Language.Qux.Syntax
 
-import Text.PrettyPrint
-import Text.PrettyPrint.HughesPJClass
-
 
 -- | A type that allows collecting errors while type checking a program.
 --   Requires a 'Context' for evaluation.
@@ -148,7 +145,7 @@ expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects
     | simp received `elem` expects  = return $ simp received
     | otherwise                     = do
-        tell [MismatchedType (Ann.ann received) (renderOneLine $ pPrint received) (map (renderOneLine . pPrint) expects)]
+        tell [MismatchedType (Ann.ann received) (simp received) expects]
 
         return $ simp received
 
@@ -157,7 +154,4 @@ attach pos BoolType         = Ann.BoolType pos
 attach pos IntType          = Ann.IntType  pos
 attach pos (ListType inner) = Ann.ListType pos (attach undefined inner)
 attach pos NilType          = Ann.NilType  pos
-
-renderOneLine :: Doc -> String
-renderOneLine = renderStyle (style { mode = OneLineMode })
 

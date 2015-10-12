@@ -73,9 +73,9 @@ decl = choice [functionDecl, importDecl] <?> "declaration"
             attrs <- many functionAttribute
             name <- id_
             symbol_ "::"
-            parameterTypes <- (try $ (,) <$> type_ <*> id_) `endBy` rightArrow
+            parameterTypes <- withPos $ (try $ (fmap (,) type_) <+/> id_) `endBy` rightArrow
             returnType <- type_
-            stmts <- option [] (colon >> indented >> block stmt)
+            stmts <- option [] (try colon >> indented >> block stmt)
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
         importDecl      = do

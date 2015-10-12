@@ -31,12 +31,15 @@ module Language.Qux.Annotated.NameResolver (
     resolveProgram, resolveDecl, resolveStmt, resolveExpr,
 ) where
 
+import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import              Data.Set (Set, member)
-import qualified    Data.Set as Set
+import              Data.Function   (on)
+import              Data.List       (deleteFirstsBy, nub, nubBy)
+import              Data.Set        (Set, member)
+import qualified    Data.Set        as Set
 
 import              Language.Qux.Annotated.Exception
 import              Language.Qux.Annotated.Parser (SourcePos)
@@ -68,13 +71,22 @@ data Context = Context {
 context :: Program -> [Program] -> Context
 context program@(Program m decls) programs = Context {
     module_     = m,
-    functions   = [m' ++ [name] | (Program m' decls') <- program:programs, m' `elem` imports, (FunctionDecl _ name _ _) <- decls']
+    functions   = nub [m' ++ [name] | (Program m' decls') <- program:programs, m' `elem` imports, (FunctionDecl _ name _ _) <- decls']
     }
     where
         imports = m:[id | (ImportDecl id) <- decls]
 
 functionsFromName :: Id -> Context -> [[Id]]
 functionsFromName name = (filter $ (==) name . last) . functions
+
+functionFromName :: Ann.Id SourcePos -> Resolve [Id]
+functionFromName (Ann.Id pos name) = do
+    ids <- asks $ functionsFromName name
+
+    when (length ids == 0) $ tell [UndefinedFunctionCall pos name]
+    when (length ids > 1)  $ tell [AmbiguousFunctionCall pos name (map init ids)]
+
+    return $ head ids
 
 
 -- | Local context.
@@ -84,7 +96,18 @@ type Locals = Set Id
 
 -- | Resolves the names of a program.
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)
-resolveProgram (Ann.Program pos module_ decls) = mapM resolveDecl decls >>= \decls' -> return $ Ann.Program pos module_ decls'
+resolveProgram (Ann.Program pos module_ decls) = do
+    let imports     =  [import_ | import_@(Ann.ImportDecl {}) <- decls]
+    foundImports    <- asks $ map init . functions
+
+    let unfoundImports = filter (\(Ann.ImportDecl _ id) -> map simp id `notElem` foundImports) imports
+    when (not $ null unfoundImports) $ tell [ImportNotFound pos (map simp id) | (Ann.ImportDecl pos id) <- unfoundImports]
+
+    let uniqueImports       = nubBy ((==) `on` simp) imports
+    let duplicateImports    = deleteFirstsBy ((==) `on` simp) imports uniqueImports
+    when (not $ null duplicateImports) $ tell [DuplicateImport pos (map simp id) | (Ann.ImportDecl pos id) <- duplicateImports]
+
+    mapM resolveDecl decls >>= \decls' -> return $ Ann.Program pos module_ decls'
 
 -- | Resolves the names of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
@@ -124,13 +147,10 @@ resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (member $ simp na
 
         return $ Ann.VariableExpr pos name
     False   -> do
-        ids         <- asks $ functionsFromName (simp name)
+        id          <- lift $ functionFromName name
         arguments_  <- mapM resolveExpr arguments
 
-        -- TODO (hjw): what if there is more than one exporter of the function?
-        when (length ids /= 1) $ error ("internal error: function \"" ++ simp name ++ "\" is exported by multiple modules")
-
-        return $ Ann.CallExpr pos (map (Ann.Id $ Ann.ann name) (head ids)) arguments_
+        return $ Ann.CallExpr pos (map (Ann.Id $ Ann.ann name) id) arguments_
 resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
     lhs' <- resolveExpr lhs
     rhs' <- resolveExpr rhs

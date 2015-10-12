@@ -29,6 +29,10 @@ import Data.Typeable
 import Language.Qux.Annotated.Parser (SourcePos)
 import Language.Qux.Syntax
 
+import Text.PrettyPrint
+import Text.PrettyPrint.HughesPJClass
+
+
 class CompilerException e where
     -- | Extracts the source position from the exception.
     pos :: e -> SourcePos
@@ -47,7 +51,7 @@ data TypeException  = TypeException SourcePos String        -- ^ A generic type 
                     | InvalidFunctionCall SourcePos Int Int -- ^ Indicates the wrong number of
                                                             --   arguments was passed to the
                                                             --   function call.
-                    | MismatchedType SourcePos Id [Id]      -- ^ Indicates a type mismatch.
+                    | MismatchedType SourcePos Type [Type]  -- ^ Indicates a type mismatch.
     deriving (Eq, Typeable)
 
 instance CompilerException TypeException where
@@ -65,12 +69,9 @@ instance CompilerException TypeException where
         "\nexpecting", show expected
         ]
     message (MismatchedType _ received expects)         = intercalate " " [
-        "unexpected type", "\"" ++ received ++ "\"",
-        "\nexpecting", sentence "or" expects
+        "unexpected type", "\"" ++ (renderOneLine $ pPrint received) ++ "\"",
+        "\nexpecting", sentence "or" (map (renderOneLine . pPrint) expects)
         ]
-        where
-            sentence _ [x]  = x
-            sentence sep xs = intercalate " " [intercalate ", " (map show $ init xs), sep, show $ last xs]
 
 instance Exception TypeException
 
@@ -79,17 +80,42 @@ instance Show TypeException where
 
 
 -- | An exception that occurs during name resolution. See "Language.Qux.Annotated.NameResolver".
-data ResolveException   = ResolveException SourcePos String -- ^ A generic type exception with a
-                                                            --   position and message.
+data ResolveException   = ResolveException SourcePos String         -- ^ A generic type exception with a
+                                                                    --   position and message.
+                        | AmbiguousFunctionCall SourcePos Id [[Id]] -- ^ Indicates multiple exporters of a function.
+                        | DuplicateImport SourcePos [Id]            -- ^ Indicates duplicate import found.
+                        | ImportNotFound SourcePos [Id]             -- ^ Indicates import not found.
+                        | UndefinedFunctionCall SourcePos Id        -- ^ Indicates function not found.
     deriving (Eq, Typeable)
 
 instance CompilerException ResolveException where
-    pos (ResolveException p _) = p
+    pos (ResolveException p _)          = p
+    pos (AmbiguousFunctionCall p _ _)   = p
+    pos (DuplicateImport p _)           = p
+    pos (ImportNotFound p _)            = p
+    pos (UndefinedFunctionCall p _)     = p
 
-    message (ResolveException _ m) = m
+    message (ResolveException _ m)                      = m
+    message (AmbiguousFunctionCall _ name exporters)    = intercalate " " [
+        "ambiguous call to function", "\"" ++ name ++ "\"",
+        "\nexported from", sentence "and" (map (intercalate ".") exporters)
+        ]
+    message (DuplicateImport _ id)                      = "duplicate import \"" ++ intercalate "." id ++ "\""
+    message (ImportNotFound _ id)                       = "imported module does not exist \"" ++ intercalate "." id ++ "\""
+    message (UndefinedFunctionCall _ name)              = "call to undefined function \"" ++ name ++ "\""
 
 instance Exception ResolveException
 
 instance Show ResolveException where
     show e = show (pos e) ++ ":\n" ++ message e
+
+
+-- Helper methods
+
+renderOneLine :: Doc -> String
+renderOneLine = renderStyle (style { mode = OneLineMode })
+
+sentence :: String -> [String] -> String
+sentence _ [x]  = x
+sentence sep xs = intercalate " " [intercalate ", " (map show $ init xs), sep, show $ last xs]
 

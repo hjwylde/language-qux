@@ -5,6 +5,7 @@
 * Added in name resolution.
 * Added in import statements.
 * Added in `external` function attribute.
+* Added in exceptions from name resolver.
 
 #### v0.2.0.0
 
