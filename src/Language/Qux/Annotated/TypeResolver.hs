@@ -118,8 +118,7 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs) = do
 
     return $ Ann.TypedExpr pos type_ (Ann.BinaryExpr pos op lhs' rhs')
 resolveExpr (Ann.CallExpr pos id arguments) = asks (Map.lookup (map simp id) . functions) >>= maybe
--- TODO (hjw): raise an exception rather than fail
-    (error "internal error: undefined function call has no type")
+    (error "internal error: undefined function call has no type (try applying name resolution)")
     (\type_ -> do
         arguments_ <- mapM resolveExpr arguments
 
@@ -144,9 +143,9 @@ resolveExpr e@(Ann.VariableExpr pos name)   = gets (fromJust . Map.lookup (simp 
 resolveValue :: Value -> Type
 resolveValue (BoolValue _)          = BoolType
 resolveValue (IntValue _)           = IntType
-resolveValue (ListValue elements)   = case length (nub types) == 1 of
-    True    -> ListType $ head types
-    False   -> error "internal error: top type not implemented"
+resolveValue (ListValue elements)
+    | length (nub types) == 1   = ListType $ head types
+    | otherwise                 = error "internal error: top type not implemented"
     where
         types = map resolveValue elements
 resolveValue NilValue               = NilType
