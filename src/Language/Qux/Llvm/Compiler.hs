@@ -22,8 +22,9 @@ module Language.Qux.Llvm.Compiler (
 import Control.Monad.Reader
 import Control.Monad.State
 
+import              Data.Char   (digitToInt)
 import qualified    Data.Map    as Map
-import              Data.Maybe
+import              Data.Maybe  (fromJust, isNothing)
 
 import Language.Qux.Context
 import Language.Qux.Llvm.Builder    as B
@@ -205,6 +206,10 @@ compileValue (BoolValue bool)   = Int {
     integerBits = 1,
     integerValue = toInteger (fromEnum bool)
     }
+compileValue (CharValue char)     = Int {
+    integerBits = 8,
+    integerValue = toInteger $ digitToInt char
+    }
 compileValue (IntValue int)     = Int {
     integerBits = 32,
     integerValue = toInteger int
@@ -214,6 +219,7 @@ compileValue NilValue           = error "internal error: compilation for nil not
 
 compileType :: Qux.Type -> Llvm.Type
 compileType BoolType        = i1
+compileType CharType        = i8
 compileType IntType         = i32
 compileType (ListType _)    = error "internal error: compilation for list types not implemented"
 compileType NilType         = error "internal error: compilation for nil types not implemented"

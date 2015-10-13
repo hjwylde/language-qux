@@ -164,6 +164,7 @@ instance Pretty UnaryOp where
 
 -- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
+            | CharValue Char    -- ^ A character.
             | IntValue Integer  -- ^ An unbounded integer.
             | ListValue [Value] -- ^ A normalised list value.
             | NilValue          -- ^ A unit value.
@@ -171,6 +172,7 @@ data Value  = BoolValue Bool    -- ^ A boolean.
 
 instance Pretty Value where
     pPrint (BoolValue bool)     = text $ lower (show bool)
+    pPrint (CharValue c)        = char c
     pPrint (IntValue int)       = text $ show int
     pPrint (ListValue elements) = brackets $ fsep (punctuate comma (map pPrint elements))
     pPrint NilValue             = text "nil"
@@ -178,6 +180,7 @@ instance Pretty Value where
 
 -- | A type.
 data Type   = BoolType
+            | CharType
             | IntType
             | ListType Type -- ^ A list type with an inner type.
             | NilType
@@ -185,6 +188,7 @@ data Type   = BoolType
 
 instance Pretty Type where
     pPrint BoolType         = text "Bool"
+    pPrint CharType         = text "Char"
     pPrint IntType          = text "Int"
     pPrint (ListType inner) = brackets $ pPrint inner
     pPrint NilType          = text "Nil"

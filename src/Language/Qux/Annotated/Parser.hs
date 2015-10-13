@@ -168,6 +168,7 @@ value :: Parser Value
 value = choice [
     BoolValue False <$  reserved "false",
     BoolValue True  <$  reserved "true",
+    CharValue       <$> charLiteral,
     IntValue        <$> natural,
     ListValue       <$> brackets (value `sepEndBy` comma),
     NilValue        <$  reserved "nil"
@@ -177,6 +178,7 @@ value = choice [
 type_ :: Parser (Type SourcePos)
 type_ = getPosition >>= \pos -> choice [
     BoolType pos <$  reserved "Bool",
+    CharType pos <$  reserved "Char",
     IntType  pos <$  reserved "Int",
     ListType pos <$> brackets type_,
     NilType  pos <$  reserved "Nil"

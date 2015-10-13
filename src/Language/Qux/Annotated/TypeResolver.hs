@@ -140,6 +140,7 @@ resolveExpr e@(Ann.VariableExpr pos name)   = gets (fromJust . Map.lookup (simp 
 -- | Resolves the type of a value.
 resolveValue :: Value -> Type
 resolveValue (BoolValue _)          = BoolType
+resolveValue (CharValue _)          = CharType
 resolveValue (IntValue _)           = IntType
 resolveValue (ListValue elements)
     | length (nub types) == 1   = ListType $ head types

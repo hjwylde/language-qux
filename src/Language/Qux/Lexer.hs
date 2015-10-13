@@ -24,6 +24,9 @@ lexer :: Token.GenTokenParser String u (State SourcePos)
 lexer = Token.makeTokenParser quxDef
 
 
+charLiteral :: ParsecT String u (State SourcePos) Char
+charLiteral = Token.charLiteral lexer
+
 identifier :: ParsecT String u (State SourcePos) String
 identifier = Token.identifier lexer
 

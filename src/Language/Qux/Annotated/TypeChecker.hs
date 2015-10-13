@@ -148,6 +148,7 @@ expectType received expects
 
 attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos BoolType         = Ann.BoolType pos
+attach pos CharType         = Ann.CharType pos
 attach pos IntType          = Ann.IntType  pos
 attach pos (ListType inner) = Ann.ListType pos (attach undefined inner)
 attach pos NilType          = Ann.NilType  pos

@@ -180,6 +180,7 @@ instance Pretty (Expr a) where
 
 -- | A type.
 data Type a = BoolType a
+            | CharType a
             | IntType a
             | ListType a (Type a) -- ^ A list type with an inner type.
             | NilType a
@@ -187,12 +188,14 @@ data Type a = BoolType a
 
 instance Annotated Type where
     ann (BoolType a)    = a
+    ann (CharType a)    = a
     ann (IntType a)     = a
     ann (ListType a _)  = a
     ann (NilType a)     = a
 
 instance Simplifiable (Type a) S.Type where
     simp (BoolType _)       = S.BoolType
+    simp (CharType _)       = S.CharType
     simp (IntType _)        = S.IntType
     simp (ListType _ inner) = S.ListType $ simp inner
     simp (NilType _)        = S.NilType
