@@ -16,13 +16,11 @@ The "Language.Qux.Annotated.TypeChecker" and "Language.Qux.Llvm.Compiler" module
 -}
 
 module Language.Qux.Annotated.TypeResolver (
+    module Language.Qux.Context,
+
     -- * Environment
     Resolve,
     runResolve,
-
-    -- * Global context
-    Context(..),
-    baseContext, context, emptyContext,
 
     -- * Local context
     Locals,

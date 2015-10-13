@@ -22,7 +22,6 @@ module Language.Qux.Llvm.Compiler (
 import Control.Monad.Reader
 import Control.Monad.State
 
-import              Data.List   (intercalate)
 import qualified    Data.Map    as Map
 import              Data.Maybe
 
@@ -60,7 +59,7 @@ compileProgram (Program module_ decls) = do
     definitions     <- mapM compileDecl [decl | decl@(FunctionDecl attrs _ _ _) <- decls, External `notElem` attrs]
 
     return $ defaultModule {
-        moduleName          = intercalate "." module_,
+        moduleName          = qualify module_,
         moduleDefinitions   = declarations ++ externals ++ definitions
         }
 
@@ -218,10 +217,4 @@ compileType BoolType        = i1
 compileType IntType         = i32
 compileType (ListType _)    = error "internal error: compilation for list types not implemented"
 compileType NilType         = error "internal error: compilation for nil types not implemented"
-
-
--- Helper methods
-
-mangle :: [Id] -> String
-mangle id = intercalate "_" id
 

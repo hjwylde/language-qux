@@ -44,7 +44,7 @@ library
     build-depends:
         base >= 4.8 && < 5,
         containers == 0.5.*,
-        either == 4.*,
+        extra == 1.*,
         indents >= 0.3.3 && < 0.4,
         llvm-general-pure == 3.4.*,
         mtl == 2.*,

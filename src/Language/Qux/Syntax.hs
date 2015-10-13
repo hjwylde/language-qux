@@ -16,10 +16,17 @@ module Language.Qux.Syntax (
     -- * Nodes
     Id, Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), BinaryOp(..),
     UnaryOp(..), Value(..), Type(..),
+
+    -- * Extra methods
+
+    -- ** Utility
+    qualify, mangle,
+
+    -- ** Rendering
+    pShow,
 ) where
 
-import Data.Char (toLower)
-import Data.List (intercalate)
+import Data.List.Extra (intercalate, lower)
 
 import Text.PrettyPrint
 import Text.PrettyPrint.HughesPJClass
@@ -49,7 +56,7 @@ instance Pretty Decl where
     pPrint (FunctionDecl attrs name type_ [])       = declarationDoc attrs name type_
     pPrint (FunctionDecl attrs name type_ stmts)    = vcat [
         declarationDoc attrs name type_ <> colon,
-        nest 4 (block stmts)
+        nest 4 $ block stmts
         ]
     pPrint (ImportDecl id)                          = text "import" <+> hcat (punctuate (char '.') (map text id))
 
@@ -66,7 +73,7 @@ data FunctionAttribute = External
     deriving (Eq, Show)
 
 instance Pretty FunctionAttribute where
-    pPrint = text . (map toLower) . show
+    pPrint = text . lower . show
 
 
 -- | A statement.
@@ -78,14 +85,14 @@ data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false b
 instance Pretty Stmt where
     pPrint (IfStmt condition trueStmts falseStmts)  = vcat [
         text "if" <+> pPrint condition <> colon,
-        nest 4 (block trueStmts),
+        nest 4 $ block trueStmts,
         if null falseStmts then empty else text "else:",
-        nest 4 (block falseStmts)
+        nest 4 $ block falseStmts
         ]
     pPrint (ReturnStmt expr)                        = text "return" <+> pPrint expr
     pPrint (WhileStmt condition stmts)              = vcat [
         text "while" <+> pPrint condition <> colon,
-        nest 4 (block stmts)
+        nest 4 $ block stmts
         ]
 
 
@@ -106,7 +113,7 @@ data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name (unresolved) to
 instance Pretty Expr where
     pPrint (ApplicationExpr name arguments) = text name <+> fsep (map pPrint arguments)
     pPrint (BinaryExpr op lhs rhs)          = parens $ fsep [pPrint lhs, pPrint op, pPrint rhs]
-    pPrint (CallExpr id arguments)          = text (intercalate "." id) <+> fsep (map pPrint arguments)
+    pPrint (CallExpr id arguments)          = text (qualify id) <+> fsep (map pPrint arguments)
     pPrint (ListExpr elements)              = brackets $ fsep (punctuate comma (map pPrint elements))
     pPrint (TypedExpr _ expr)               = pPrint expr
     pPrint (UnaryExpr Len expr)             = char '|' <> pPrint expr <> char '|'
@@ -163,7 +170,7 @@ data Value  = BoolValue Bool    -- ^ A boolean.
     deriving (Eq, Show)
 
 instance Pretty Value where
-    pPrint (BoolValue bool)     = text $ map toLower (show bool)
+    pPrint (BoolValue bool)     = text $ lower (show bool)
     pPrint (IntValue int)       = text $ show int
     pPrint (ListValue elements) = brackets $ fsep (punctuate comma (map pPrint elements))
     pPrint NilValue             = text "nil"
@@ -181,6 +188,20 @@ instance Pretty Type where
     pPrint IntType          = text "Int"
     pPrint (ListType inner) = brackets $ pPrint inner
     pPrint NilType          = text "Nil"
+
+
+-- | Qualifies the identifier into a single 'Id' joined with periods.
+qualify :: [Id] -> Id
+qualify = intercalate "."
+
+-- | Mangles the identifier into a single 'Id' joined with underscores.
+mangle :: [Id] -> Id
+mangle = intercalate "_"
+
+
+-- | @pShow a@ pretty prints @a@ using a rending mode of 'OneLineMode'.
+pShow :: Pretty a => a -> String
+pShow = renderStyle (style { mode = OneLineMode }) . pPrint
 
 
 -- Helper methods

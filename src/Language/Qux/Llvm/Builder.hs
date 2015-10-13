@@ -17,8 +17,7 @@ module Language.Qux.Llvm.Builder where
 
 import Control.Monad.State
 
-import              Data.Map (Map)
-import qualified    Data.Map as Map
+import Data.Map as Map
 
 import LLVM.General.AST
 
@@ -32,10 +31,13 @@ data Builder = Builder {
 
 initialBuilder :: Builder
 initialBuilder = Builder {
-    currentBlock    = Name ".0",
-    blocks          = Map.singleton (Name ".0") defaultBlockBuilder { name = Name ".0" },
+    currentBlock    = name',
+    blocks          = Map.singleton name' defaultBlockBuilder { name = name' },
     counter         = 1
     }
+    where
+        name' = Name ".0"
+
 
 data BlockBuilder = BlockBuilder {
     name    :: Name,
@@ -61,9 +63,7 @@ addBlock :: Monad m => MonadState Builder m => Name -> m ()
 addBlock name' = modify $ \s -> s { blocks = Map.insert name' defaultBlockBuilder { name = name' } (blocks s) }
 
 modifyBlock :: Monad m => MonadState Builder m => (BlockBuilder -> BlockBuilder) -> m ()
-modifyBlock f = do
-    c <- current
-    modify $ \s -> s { blocks = Map.insert (name c) (f c) (blocks s) }
+modifyBlock f = current >>= \c -> modify (\s -> s { blocks = Map.insert (name c) (f c) (blocks s) })
 
 current :: Monad m => MonadState Builder m => m BlockBuilder
 current = getBlock >>= \name -> gets (flip (Map.!) name . blocks)

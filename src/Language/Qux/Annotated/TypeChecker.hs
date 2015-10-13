@@ -14,13 +14,11 @@ They don't verify other properties such as definite assignment.
 -}
 
 module Language.Qux.Annotated.TypeChecker (
+    module Language.Qux.Context,
+
     -- * Environment
     Check,
     runCheck, execCheck,
-
-    -- * Global context
-    Context(..),
-    baseContext, context, emptyContext,
 
     -- * Local context
     Locals,
@@ -35,7 +33,6 @@ import Control.Monad.Writer
 
 import              Data.Function   (on)
 import              Data.List       ((\\), nubBy)
-import              Data.Map        ((!))
 import qualified    Data.Map        as Map
 
 import              Language.Qux.Annotated.Exception
@@ -43,6 +40,7 @@ import              Language.Qux.Annotated.Parser       (SourcePos)
 import              Language.Qux.Annotated.Syntax       (simp)
 import qualified    Language.Qux.Annotated.Syntax       as Ann
 import              Language.Qux.Annotated.TypeResolver
+import              Language.Qux.Context
 import              Language.Qux.Syntax
 
 
@@ -90,7 +88,7 @@ checkStmt (Ann.IfStmt _ condition trueStmts falseStmts)   = do
     checkBlock trueStmts
     checkBlock falseStmts
 checkStmt (Ann.ReturnStmt _ expr)                         = do
-    expected <- gets (! "@")
+    expected <- gets (Map.! "@")
 
     expectExpr_ expr [expected]
 checkStmt (Ann.WhileStmt _ condition stmts)               = do
@@ -133,7 +131,7 @@ checkExpr _                                                         = error "int
 
 expectExpr :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check Type
 expectExpr expr expects = do
-    type_ <- (attach (Ann.ann expr) <$> checkExpr expr)
+    type_ <- attach (Ann.ann expr) <$> checkExpr expr
 
     lift $ expectType type_ expects
 

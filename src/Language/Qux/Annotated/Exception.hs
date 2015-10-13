@@ -29,9 +29,6 @@ import Data.Typeable
 import Language.Qux.Annotated.Parser (SourcePos)
 import Language.Qux.Syntax
 
-import Text.PrettyPrint
-import Text.PrettyPrint.HughesPJClass
-
 
 class CompilerException e where
     -- | Extracts the source position from the exception.
@@ -64,13 +61,13 @@ instance CompilerException TypeException where
     message (TypeException _ m)                         = m
     message (DuplicateFunctionName _ name)              = "duplicate function name \"" ++ name ++ "\""
     message (DuplicateParameterName _ name)             = "duplicate parameter name \"" ++ name ++ "\""
-    message (InvalidFunctionCall _ received expected)   = intercalate " " [
-        "invalid arguments count", show received,
-        "\nexpecting", show expected
+    message (InvalidFunctionCall _ received expected)   = unlines [
+        "invalid arguments count " ++ show received,
+        "expecting " ++ show expected
         ]
-    message (MismatchedType _ received expects)         = intercalate " " [
-        "unexpected type", "\"" ++ (renderOneLine $ pPrint received) ++ "\"",
-        "\nexpecting", sentence "or" (map (renderOneLine . pPrint) expects)
+    message (MismatchedType _ received expects)         = unlines [
+        "unexpected type \"" ++ pShow received ++ "\"",
+        "expecting " ++ sentence "or" (map pShow expects)
         ]
 
 instance Exception TypeException
@@ -98,12 +95,12 @@ instance CompilerException ResolveException where
     pos (UndefinedFunctionCall p _)     = p
 
     message (ResolveException _ m)                      = m
-    message (AmbiguousFunctionCall _ name exporters)    = intercalate " " [
-        "ambiguous call to function", "\"" ++ name ++ "\"",
-        "\nexported from", sentence "and" (map (intercalate ".") exporters)
+    message (AmbiguousFunctionCall _ name exporters)    = unlines [
+        "ambiguous call to function \"" ++ name ++ "\"",
+        "exported from " ++ sentence "and" (map qualify exporters)
         ]
-    message (DuplicateImport _ id)                      = "duplicate import \"" ++ intercalate "." id ++ "\""
-    message (ImportNotFound _ id)                       = "cannot find module \"" ++ intercalate "." id ++ "\""
+    message (DuplicateImport _ id)                      = "duplicate import \"" ++ qualify id ++ "\""
+    message (ImportNotFound _ id)                       = "cannot find module \"" ++ qualify id ++ "\""
     message (InvalidVariableAccess _ name)              = "arguments passed when accessing local variable \"" ++ name ++ "\""
     message (UndefinedFunctionCall _ name)              = "call to undefined function \"" ++ name ++ "\""
 
@@ -114,9 +111,6 @@ instance Show ResolveException where
 
 
 -- Helper methods
-
-renderOneLine :: Doc -> String
-renderOneLine = renderStyle (style { mode = OneLineMode })
 
 sentence :: String -> [String] -> String
 sentence _ [x]  = x

@@ -29,9 +29,20 @@ module Language.Qux.Annotated.Syntax (
 
     -- * Regular nodes
     BinaryOp(..), UnaryOp(..), Value(..),
+
+    -- * Extra methods
+
+    -- ** Utility
+    qualify, mangle,
+
+    -- ** Rendering
+    pShow,
 ) where
 
-import              Language.Qux.Syntax (BinaryOp(..), UnaryOp(..), Value(..))
+import Data.List        (intercalate)
+import Data.Tuple.Extra ((***))
+
+import              Language.Qux.Syntax (BinaryOp(..), UnaryOp(..), Value(..), pShow)
 import qualified    Language.Qux.Syntax as S
 
 import Text.PrettyPrint.HughesPJClass
@@ -88,7 +99,7 @@ instance Annotated Decl where
     ann (ImportDecl a _)        = a
 
 instance Simplifiable (Decl a) S.Decl where
-    simp (FunctionDecl _ attrs name type_ stmts) = S.FunctionDecl (map simp attrs) (simp name) (map (tmap simp simp) type_) (map simp stmts)
+    simp (FunctionDecl _ attrs name type_ stmts) = S.FunctionDecl (map simp attrs) (simp name) (map (simp *** simp) type_) (map simp stmts)
     simp (ImportDecl _ id) = S.ImportDecl $ map simp id
 
 instance Pretty (Decl a) where
@@ -190,8 +201,11 @@ instance Pretty (Type a) where
     pPrint = pPrint . simp
 
 
--- Helper methods
+-- | Qualifies the identifier into a single 'Id' joined with periods.
+qualify :: [Id a] -> Id a
+qualify id = Id (ann $ head id) (intercalate "." (map simp id))
 
-tmap :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
-tmap f g (a, c) = (f a, g c)
+-- | Mangles the identifier into a single 'Id' joined with underscores.
+mangle :: [Id a] -> Id a
+mangle id = Id (ann $ head id) (intercalate "_" (map simp id))
 

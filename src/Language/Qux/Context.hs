@@ -13,12 +13,16 @@ Context data type and utility methods.
 module Language.Qux.Context (
     -- * Context
     Context(..),
-    baseContext, context, emptyContext,
-    localFunctions, importedFunctions,
+
+    -- ** Creating contexts
+    emptyContext, baseContext, narrowContext, context,
+
+    -- ** Utility functions
+    localFunctions, importedFunctions, functionsFromName, functionsFromModule,
 ) where
 
-import              Data.Map    (Map, filterWithKey)
-import qualified    Data.Map    as Map
+import Data.List.Extra  (nubOrd)
+import Data.Map         as Map
 
 import Language.Qux.Syntax
 
@@ -26,37 +30,64 @@ import Language.Qux.Syntax
 -- | Global context that holds function definition types.
 data Context = Context {
     module_     :: [Id],                    -- ^ The current module identifier.
+    imports     :: [[Id]],                  -- ^ The imports required by the module.
     functions   :: Map [Id] [(Type, Id)]    -- ^ A map of qualified identifiers to function types
                                             --   (including parameter names).
     }
     deriving (Eq, Show)
 
 
+-- | An empty context.
+emptyContext :: Context
+emptyContext = Context { module_ = [], imports = [], functions = Map.empty }
+
 -- | Returns a base context for the given programs.
 --   The base context populates @functions@ but not @module_@.
 baseContext :: [Program] -> Context
 baseContext programs = Context {
     module_     = [],
-    functions   = Map.fromList $ [(module_ ++ [name], type_) | (Program module_ decls) <- programs, (FunctionDecl _ name type_ _) <- decls]
+    imports     = [],
+    functions   = Map.fromList [(module_ ++ [name], type_) |
+        (Program module_ decls) <- programs,
+        (FunctionDecl _ name type_ _) <- decls
+        ]
     }
 
+-- | Narrows down the given context and makes it specific to the given program.
+--   This method removes any function references that aren't imported by the program.
+narrowContext :: Context -> Program -> Context
+narrowContext context (Program module_' decls) = context {
+    module_     = module_',
+    imports     = imports',
+    functions   = Map.filterWithKey (\id _ -> init id `elem` module_':imports') (functions context)
+    }
+    where
+        imports' = nubOrd [id | (ImportDecl id) <- decls]
+
 -- | Returns a specific context for the given program.
-context :: Program -> [Program] -> Context
-context (Program m _) programs = (baseContext programs) { module_ = m }
+--   @context programs program = narrowContext (baseContext programs) program@.
+context :: [Program] -> Program -> Context
+context programs program = narrowContext (baseContext programs) program
 
--- | An empty context.
-emptyContext :: Context
-emptyContext = Context { module_ = [], functions = Map.empty }
 
--- | Gets the local functions from the context.
+-- | Filters the local functions from the context.
+--   This is functions defined (or declared) in the current module.
 localFunctions :: Context -> Map [Id] [(Type, Id)]
-localFunctions context = filterWithKey (\id _ -> init id == m) (functions context)
+localFunctions context = Map.filterWithKey (\id _ -> init id == module_') (functions context)
     where
-        m = module_ context
+        module_' = module_ context
 
--- | Gets the imported functions from the context.
+-- | Filters the imported functions from the context.
 importedFunctions :: Context -> Map [Id] [(Type, Id)]
-importedFunctions context = filterWithKey (\id _ -> init id /= m) (functions context)
+importedFunctions context = Map.filterWithKey (\id _ -> init id /= module_') (functions context)
     where
-        m = module_ context
+        module_' = module_ context
+
+-- | Filters the functions that export the given function name.
+functionsFromName :: Context -> Id -> Map [Id] [(Type, Id)]
+functionsFromName context name = Map.filterWithKey (\id _ -> last id == name) (functions context)
+
+-- | Filters the functions that are exported by the given module.
+functionsFromModule :: Context -> [Id] -> Map [Id] [(Type, Id)]
+functionsFromModule context id = Map.filterWithKey (\id' _ -> init id' == id) (functions context)
 

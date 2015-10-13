@@ -16,13 +16,11 @@ The "Language.Qux.Annotated.TypeChecker" and "Language.Qux.Llvm.Compiler" module
 -}
 
 module Language.Qux.Annotated.NameResolver (
+    module Language.Qux.Context,
+
     -- * Environment
     Resolve,
     runResolve,
-
-    -- * Global context
-    Context(..),
-    context,
 
     -- * Local context
     Locals,
@@ -38,15 +36,14 @@ import Control.Monad.Writer
 
 import              Data.Function   (on)
 import              Data.List       (deleteFirstsBy, nub, nubBy)
-import              Data.Set        (Set, member)
-import qualified    Data.Set        as Set
+import qualified    Data.Map        as Map
 
 import              Language.Qux.Annotated.Exception
 import              Language.Qux.Annotated.Parser (SourcePos)
 import              Language.Qux.Annotated.Syntax (simp)
 import qualified    Language.Qux.Annotated.Syntax as Ann
+import              Language.Qux.Context
 import              Language.Qux.Syntax
-
 
 -- | A type that allows resolving types.
 --   Requires a 'Context' for evaluation.
@@ -57,31 +54,9 @@ runResolve :: Resolve a -> Context -> (a, [ResolveException])
 runResolve resolve context = runWriter $ runReaderT resolve context
 
 
--- | Global context that holds the current module identifier.
-data Context = Context {
-    module_     :: [Id],    -- ^ The current module identifier.
-    functions   :: [[Id]]   -- ^ A list of available qualified function identifiers.
-                            --   This includes the current module's functions and imported
-                            --   functions.
-    }
-    deriving (Eq, Show)
-
--- | Returns a context for the given program.
---   Requires the main program being resolved and the contextual programs (to resolve imports from).
-context :: Program -> [Program] -> Context
-context program@(Program m decls) programs = Context {
-    module_     = m,
-    functions   = nub [m' ++ [name] | (Program m' decls') <- program:programs, m' `elem` imports, (FunctionDecl _ name _ _) <- decls']
-    }
-    where
-        imports = m:[id | (ImportDecl id) <- decls]
-
-functionsFromName :: Id -> Context -> [[Id]]
-functionsFromName name = (filter $ (==) name . last) . functions
-
 functionFromName :: Ann.Id SourcePos -> Resolve [Id]
 functionFromName (Ann.Id pos name) = do
-    ids <- asks $ functionsFromName name
+    ids <- asks $ Map.keys . flip functionsFromName name
 
     when (length ids == 0) $ tell [UndefinedFunctionCall pos name]
     when (length ids > 1)  $ tell [AmbiguousFunctionCall pos name (map init ids)]
@@ -90,15 +65,15 @@ functionFromName (Ann.Id pos name) = do
 
 
 -- | Local context.
---   This is a set of local variable names.
-type Locals = Set Id
+--   This is a list of local variable names.
+type Locals = [Id]
 
 
 -- | Resolves the names of a program.
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)
 resolveProgram (Ann.Program pos module_ decls) = do
     let imports     =  [import_ | import_@(Ann.ImportDecl {}) <- decls]
-    foundImports    <- asks $ map init . functions
+    foundImports    <- asks $ nub . map init . Map.keys . importedFunctions
 
     let unfoundImports = filter (\(Ann.ImportDecl _ id) -> map simp id `notElem` foundImports) imports
     when (not $ null unfoundImports) $ tell [ImportNotFound pos (map simp id) | (Ann.ImportDecl pos id) <- unfoundImports]
@@ -112,7 +87,7 @@ resolveProgram (Ann.Program pos module_ decls) = do
 -- | Resolves the names of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
 resolveDecl (Ann.FunctionDecl pos attrs name type_ stmts)   = do
-    stmts' <- evalStateT (resolveBlock stmts) (Set.fromList $ map (simp . snd) type_)
+    stmts' <- evalStateT (resolveBlock stmts) (map (simp . snd) type_)
 
     return $ Ann.FunctionDecl pos attrs name type_ stmts'
 resolveDecl decl                                            = return decl
@@ -140,7 +115,7 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 
 -- | Resolves the names of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
-resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (member $ simp name) >>= \member -> case member of
+resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (elem $ simp name) >>= \member -> case member of
     True    -> do
         when (length arguments /= 0) $ tell [InvalidVariableAccess pos (simp name)]
 
