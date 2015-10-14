@@ -11,6 +11,7 @@ Build utilities for the LLVM compiler, see "Compiler".
 -}
 
 {-# OPTIONS_HADDOCK hide, prune #-}
+
 {-# LANGUAGE FlexibleContexts #-}
 
 module Language.Qux.Llvm.Builder where
