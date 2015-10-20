@@ -121,9 +121,9 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))         = do
 
     return type_
 checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
-    | op `elem` [Len]               = expectExpr_ expr [ListType $ error "internal error: top type not implemented"] >> return type_
-    | op `elem` [Neg]               = expectExpr expr [type_]
-    | otherwise                     = error $ "internal error: " ++ show op ++ " not implemented"
+    | op `elem` [Len]   = expectExpr_ expr [ListType $ error "internal error: top type not implemented"] >> return type_
+    | op `elem` [Neg]   = expectExpr expr [type_]
+    | otherwise         = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr {}))                = return type_
 checkExpr (Ann.TypedExpr _ type_ (Ann.VariableExpr {}))             = return type_
 checkExpr _                                                         = error "internal error: cannot check the type of a non-typed expression (try applying type resolution)"

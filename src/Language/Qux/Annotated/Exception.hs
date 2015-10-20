@@ -1,7 +1,7 @@
 
 {-|
 Module      : Language.Qux.Annotated.Exception
-Description : Exceptions and utility raising functions.
+Description : Exceptions and utility functions.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
@@ -30,6 +30,7 @@ import Language.Qux.Annotated.Parser (SourcePos)
 import Language.Qux.Syntax
 
 
+-- | An exception that has a source position and message.
 class CompilerException e where
     -- | Extracts the source position from the exception.
     pos :: e -> SourcePos
