@@ -38,6 +38,7 @@ library
     default-language: Haskell2010
     other-extensions:
         DeriveFunctor,
+        FlexibleContexts,
         FlexibleInstances,
         FunctionalDependencies,
         MultiParamTypeClasses
