@@ -1,6 +1,7 @@
 # language-qux
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/1.0.0/active.svg)](http://www.repostatus.org/#active)
+[![Build Status](https://travis-ci.org/qux-lang/language-qux.svg?branch=master)](https://travis-ci.org/qux-lang/language-qux)
 [![Release](https://img.shields.io/github/release/qux-lang/language-qux.svg)](https://github.com/qux-lang/language-qux/releases)
 
 Qux is an experimental language developed from the ground up with the aim of supporting extended
