@@ -7,6 +7,7 @@
 * Added in `external` function attribute.
 * Added in exceptions from the name and type resolvers.
 * Added in `Char` type and character literals.
+* Added in compilation of lists to LLVM.
 
 #### v0.2.0.0
 
