@@ -62,13 +62,13 @@ instance CompilerException TypeException where
     message (TypeException _ m)                         = m
     message (DuplicateFunctionName _ name)              = "duplicate function name \"" ++ name ++ "\""
     message (DuplicateParameterName _ name)             = "duplicate parameter name \"" ++ name ++ "\""
-    message (InvalidFunctionCall _ received expected)   = unlines [
+    message (InvalidFunctionCall _ received expected)   = unwords [
         "invalid arguments count " ++ show received,
-        "expecting " ++ show expected
+        "\nexpecting " ++ show expected
         ]
-    message (MismatchedType _ received expects)         = unlines [
+    message (MismatchedType _ received expects)         = unwords [
         "unexpected type \"" ++ pShow received ++ "\"",
-        "expecting " ++ sentence "or" (map pShow expects)
+        "\nexpecting " ++ sentence "or" (map pShow expects)
         ]
 
 instance Exception TypeException
@@ -96,9 +96,9 @@ instance CompilerException ResolveException where
     pos (UndefinedFunctionCall p _)     = p
 
     message (ResolveException _ m)                      = m
-    message (AmbiguousFunctionCall _ name exporters)    = unlines [
+    message (AmbiguousFunctionCall _ name exporters)    = unwords [
         "ambiguous call to function \"" ++ name ++ "\"",
-        "exported from " ++ sentence "and" (map qualify exporters)
+        "\nexported from " ++ sentence "and" (map qualify exporters)
         ]
     message (DuplicateImport _ id)                      = "duplicate import \"" ++ qualify id ++ "\""
     message (ImportNotFound _ id)                       = "cannot find module \"" ++ qualify id ++ "\""
