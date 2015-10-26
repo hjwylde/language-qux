@@ -38,6 +38,8 @@ class CompilerException e where
     -- | Creates a human understandable message from the exception.
     message :: e -> String
 
+    -- TODO (hjw): add a posMessage and remove Show instances
+
 
 -- | An exception that occurs during type checking. See "Language.Qux.Annotated.TypeChecker".
 data TypeException  = TypeException SourcePos String        -- ^ A generic type exception with a
@@ -81,6 +83,7 @@ instance Show TypeException where
 data ResolveException   = ResolveException SourcePos String         -- ^ A generic type exception with a
                                                                     --   position and message.
                         | AmbiguousFunctionCall SourcePos Id [[Id]] -- ^ Indicates multiple exporters of a function.
+                        | DuplicateAttribute SourcePos String       -- ^ Indicates duplicate attribute found.
                         | DuplicateImport SourcePos [Id]            -- ^ Indicates duplicate import found.
                         | ImportNotFound SourcePos [Id]             -- ^ Indicates import not found.
                         | InvalidVariableAccess SourcePos Id        -- ^ Indicates arguments passed on local variable access.
@@ -90,6 +93,7 @@ data ResolveException   = ResolveException SourcePos String         -- ^ A gener
 instance CompilerException ResolveException where
     pos (ResolveException p _)          = p
     pos (AmbiguousFunctionCall p _ _)   = p
+    pos (DuplicateAttribute p _)        = p
     pos (DuplicateImport p _)           = p
     pos (ImportNotFound p _)            = p
     pos (InvalidVariableAccess p _)     = p
@@ -100,6 +104,7 @@ instance CompilerException ResolveException where
         "ambiguous call to function \"" ++ name ++ "\"",
         "\nexported from " ++ sentence "and" (map qualify exporters)
         ]
+    message (DuplicateAttribute _ name)                 = "duplicate attribute \"" ++ name ++ "\""
     message (DuplicateImport _ id)                      = "duplicate import \"" ++ qualify id ++ "\""
     message (ImportNotFound _ id)                       = "cannot find module \"" ++ qualify id ++ "\""
     message (InvalidVariableAccess _ name)              = "arguments passed when accessing local variable \"" ++ name ++ "\""

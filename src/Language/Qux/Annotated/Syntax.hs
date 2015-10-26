@@ -12,6 +12,8 @@ The annotation style was inspired by haskell-src-exts.
 
 Instances of 'Simplifiable' are provided for simplifying a node down to it's unannotated form and of
     'Pretty' for pretty printing.
+The instances of 'Eq' are defined in terms of the simplified nodes, i.e., the annotation does not
+    impact node equality.
 -}
 
 {-# LANGUAGE DeriveFunctor #-}
@@ -39,6 +41,7 @@ module Language.Qux.Annotated.Syntax (
     pShow,
 ) where
 
+import Data.Function    (on)
 import Data.List        (intercalate)
 import Data.Tuple.Extra ((***))
 
@@ -62,10 +65,13 @@ class Simplifiable n r | n -> r where
 
 -- | An identifier. Identifiers should match '[a-z_][a-zA-Z0-9_']*'.
 data Id a = Id a String
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated Id where
     ann (Id a _) = a
+
+instance Eq (Id a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (Id a) [Char] where
     simp (Id _ id) = id
@@ -76,10 +82,13 @@ instance Pretty (Id a) where
 
 -- | A program is a module identifier (list of 'Id''s) and a list of declarations.
 data Program a = Program a [Id a] [Decl a]
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated Program where
     ann (Program a _ _) = a
+
+instance Eq (Program a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (Program a) S.Program where
     simp (Program _ module_ decls) = S.Program (map simp module_) (map simp decls)
@@ -92,11 +101,14 @@ instance Pretty (Program a) where
 data Decl a = FunctionDecl a [FunctionAttribute a] (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list of ('Type', 'Id') parameters and statements.
                                                                                     --   The return type is treated as a parameter with id '@'.
             | ImportDecl a [Id a]                                                   -- ^ A module identifier to import.
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated Decl where
     ann (FunctionDecl a _ _ _ _)  = a
     ann (ImportDecl a _)        = a
+
+instance Eq (Decl a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (Decl a) S.Decl where
     simp (FunctionDecl _ attrs name type_ stmts) = S.FunctionDecl (map simp attrs) (simp name) (map (simp *** simp) type_) (map simp stmts)
@@ -108,10 +120,13 @@ instance Pretty (Decl a) where
 
 -- | A function attribute.
 data FunctionAttribute a = External a
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated FunctionAttribute where
     ann (External a) = a
+
+instance Eq (FunctionAttribute a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (FunctionAttribute a) S.FunctionAttribute where
     simp (External _) = S.External
@@ -124,12 +139,15 @@ instance Pretty (FunctionAttribute a) where
 data Stmt a = IfStmt a (Expr a) [Stmt a] [Stmt a]   -- ^ A condition, true block and false block of statements.
             | ReturnStmt a (Expr a)                 -- ^ An expression.
             | WhileStmt a (Expr a) [Stmt a]         -- ^ A condition and block of statements.
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated Stmt where
     ann (IfStmt a _ _ _)    = a
     ann (ReturnStmt a _)    = a
     ann (WhileStmt a _ _)   = a
+
+instance Eq (Stmt a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (Stmt a) S.Stmt where
     simp (IfStmt _ condition trueStmts falseStmts)  = S.IfStmt (simp condition) (map simp trueStmts) (map simp falseStmts)
@@ -152,7 +170,7 @@ data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name (un
             | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
             | ValueExpr a Value                         -- ^ A raw value.
             | VariableExpr a (Id a)                     -- ^ A local variable access.
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated Expr where
     ann (ApplicationExpr a _ _) = a
@@ -163,6 +181,9 @@ instance Annotated Expr where
     ann (UnaryExpr a _ _)       = a
     ann (ValueExpr a _)         = a
     ann (VariableExpr a _)      = a
+
+instance Eq (Expr a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (Expr a) S.Expr where
     simp (ApplicationExpr _ name arguments) = S.ApplicationExpr (simp name) (map simp arguments)
@@ -184,7 +205,7 @@ data Type a = BoolType a
             | IntType a
             | ListType a (Type a) -- ^ A list type with an inner type.
             | NilType a
-    deriving (Eq, Functor, Show)
+    deriving (Functor, Show)
 
 instance Annotated Type where
     ann (BoolType a)    = a
@@ -192,6 +213,9 @@ instance Annotated Type where
     ann (IntType a)     = a
     ann (ListType a _)  = a
     ann (NilType a)     = a
+
+instance Eq (Type a) where
+    (==) = (==) `on` simp
 
 instance Simplifiable (Type a) S.Type where
     simp (BoolType _)       = S.BoolType

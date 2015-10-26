@@ -56,7 +56,7 @@ program = do
     whiteSpace
     checkIndent
     reserved "module"
-    module_ <- sepBy1 id_ dot
+    module_ <- (same >> id_) `sepBy1` dot
     checkIndent
     decls <- block decl
     eof
@@ -75,14 +75,14 @@ decl = choice [functionDecl, importDecl] <?> "declaration"
             symbol_ "::"
             parameterTypes <- withPos $ (try $ (fmap (,) type_) <+/> id_) `endBy` rightArrow
             returnType <- type_
-            stmts <- option [] (try colon >> indented >> block stmt)
+            stmts <- if External undefined `elem` attrs then return [] else colon >> indented >> block stmt
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
         importDecl      = do
             pos <- getPosition
 
             reserved "import"
-            id <- sepBy1 id_ dot
+            id <- id_ `sepBy1` dot
 
             return $ ImportDecl pos id
 
