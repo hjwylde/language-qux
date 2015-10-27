@@ -75,10 +75,10 @@ resolveProgram (Ann.Program pos module_ decls) = do
     foundImports    <- asks $ nub . map init . Map.keys . importedFunctions
 
     let unfoundImports = filter (\(Ann.ImportDecl _ id) -> map simp id `notElem` foundImports) imports
-    when (not $ null unfoundImports) $ tell [ImportNotFound pos (map simp id) | (Ann.ImportDecl pos id) <- unfoundImports]
+    unless (null unfoundImports) $ tell [ImportNotFound pos (map simp id) | (Ann.ImportDecl pos id) <- unfoundImports]
 
     let duplicateImports = imports \\ nub imports
-    when (not $ null duplicateImports) $ tell [DuplicateImport pos (map simp id) | (Ann.ImportDecl pos id) <- duplicateImports]
+    unless (null duplicateImports) $ tell [DuplicateImport pos (map simp id) | (Ann.ImportDecl pos id) <- duplicateImports]
 
     mapM resolveDecl decls >>= \decls' -> return $ Ann.Program pos module_ decls'
 
