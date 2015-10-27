@@ -45,23 +45,34 @@ import Prelude hiding (EQ)
 --   Any exceptions to this will be clearly noted.
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
-    declarations <- map (\(id, type_) -> GlobalDefinition functionDefaults {
+    importedFunctions' <- map (\(id, type_) -> GlobalDefinition functionDefaults {
         G.name          = Name $ mangle id,
         G.returnType    = compileType $ fst (last type_),
         G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
         }) . Map.toList <$> asks importedFunctions
 
-    let externals = [GlobalDefinition functionDefaults {
+    let externalFunctions = [GlobalDefinition functionDefaults {
         G.name          = Name $ mangle (module_ ++ [name]),
         G.returnType    = compileType $ fst (last type_),
         G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
         } | (FunctionDecl attrs name type_ _) <- decls, External `elem` attrs]
 
-    definitions <- mapM compileDecl [decl | decl@(FunctionDecl attrs _ _ _) <- decls, External `notElem` attrs]
+    localFunctions <- mapM compileDecl [decl |
+        decl@(FunctionDecl attrs _ _ _) <- decls,
+        External `notElem` attrs
+        ]
+
+    importedTypes' <- map (\id -> TypeDefinition (Name $ mangle id) Nothing) <$> asks importedTypes
+
+    let externalTypes = [TypeDefinition (Name $ mangle (module_ ++ [name])) Nothing |
+            (TypeDecl attrs name) <- decls,
+            External `elem` attrs
+            ]
 
     return $ defaultModule {
         moduleName          = qualify module_,
-        moduleDefinitions   = declarations ++ externals ++ definitions
+        moduleDefinitions   = importedFunctions' ++ externalFunctions ++ localFunctions ++
+            importedTypes' ++ externalTypes
         }
 
 compileDecl :: Decl -> Reader Context Definition
@@ -76,6 +87,7 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
         basicBlocks     = map (\b -> BasicBlock (B.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
+compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
 
 compileStmt :: Stmt -> StateT Builder (Reader Context) ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do

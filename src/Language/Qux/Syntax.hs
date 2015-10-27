@@ -14,7 +14,7 @@ Instances of 'Pretty' are provided for pretty printing.
 
 module Language.Qux.Syntax (
     -- * Nodes
-    Id, Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), BinaryOp(..),
+    Id, Program(..), Decl(..), Attribute(..), Stmt(..), Expr(..), BinaryOp(..),
     UnaryOp(..), Value(..), Type(..),
 
     -- * Extra methods
@@ -47,9 +47,10 @@ instance Pretty Program where
 
 
 -- | A declaration.
-data Decl   = FunctionDecl [FunctionAttribute] Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
-                                                                        --   The return type is treated as a parameter with id '@'.
-            | ImportDecl [Id]                                           -- ^ A module identifier to import.
+data Decl   = FunctionDecl [Attribute] Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
+                                                                --   The return type is treated as a parameter with id '@'.
+            | ImportDecl [Id]                                   -- ^ A module identifier to import.
+            | TypeDecl [Attribute] Id                           -- ^ A type declaration.
     deriving (Eq, Show)
 
 instance Pretty Decl where
@@ -59,8 +60,9 @@ instance Pretty Decl where
         nest 4 $ block stmts
         ]
     pPrint (ImportDecl id)                          = text "import" <+> hcat (punctuate (char '.') (map text id))
+    pPrint (TypeDecl attrs name)                    = text "type" <+> hsep (map pPrint attrs) <+> text name
 
-declarationDoc :: [FunctionAttribute] -> Id -> [(Type, Id)] -> Doc
+declarationDoc :: [Attribute] -> Id -> [(Type, Id)] -> Doc
 declarationDoc attrs name type_ = hsep $ map pPrint attrs ++ [text name, text "::", functionTypeDoc]
     where
         functionTypeDoc = fsep $ punctuate
@@ -68,11 +70,11 @@ declarationDoc attrs name type_ = hsep $ map pPrint attrs ++ [text name, text ":
             [pPrint t <+> if p == "@" then empty else text p | (t, p) <- type_]
 
 
--- | A function attribute.
-data FunctionAttribute = External
+-- | A declaration attribute.
+data Attribute = External
     deriving (Eq, Show)
 
-instance Pretty FunctionAttribute where
+instance Pretty Attribute where
     pPrint = text . lower . show
 
 

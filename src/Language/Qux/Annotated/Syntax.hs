@@ -27,7 +27,7 @@ module Language.Qux.Annotated.Syntax (
     Simplifiable(..),
 
     -- * Annotated nodes
-    Id(..), Program(..), Decl(..), FunctionAttribute(..), Stmt(..), Expr(..), Type(..),
+    Id(..), Program(..), Decl(..), Attribute(..), Stmt(..), Expr(..), Type(..),
 
     -- * Regular nodes
     BinaryOp(..), UnaryOp(..), Value(..),
@@ -98,40 +98,43 @@ instance Pretty (Program a) where
 
 
 -- | A declaration.
-data Decl a = FunctionDecl a [FunctionAttribute a] (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list of ('Type', 'Id') parameters and statements.
-                                                                                    --   The return type is treated as a parameter with id '@'.
-            | ImportDecl a [Id a]                                                   -- ^ A module identifier to import.
+data Decl a = FunctionDecl a [Attribute a] (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list of ('Type', 'Id') parameters and statements.
+                                                                            --   The return type is treated as a parameter with id '@'.
+            | ImportDecl a [Id a]                                           -- ^ A module identifier to import.
+            | TypeDecl a [Attribute a] (Id a)                               -- ^ A type declaration.
     deriving (Functor, Show)
 
 instance Annotated Decl where
-    ann (FunctionDecl a _ _ _ _)  = a
-    ann (ImportDecl a _)        = a
+    ann (FunctionDecl a _ _ _ _)    = a
+    ann (ImportDecl a _)            = a
+    ann (TypeDecl a _ _)            = a
 
 instance Eq (Decl a) where
     (==) = (==) `on` simp
 
 instance Simplifiable (Decl a) S.Decl where
-    simp (FunctionDecl _ attrs name type_ stmts) = S.FunctionDecl (map simp attrs) (simp name) (map (simp *** simp) type_) (map simp stmts)
-    simp (ImportDecl _ id) = S.ImportDecl $ map simp id
+    simp (FunctionDecl _ attrs name type_ stmts)    = S.FunctionDecl (map simp attrs) (simp name) (map (simp *** simp) type_) (map simp stmts)
+    simp (ImportDecl _ id)                          = S.ImportDecl $ map simp id
+    simp (TypeDecl _ attrs name)                    = S.TypeDecl (map simp attrs) (simp name)
 
 instance Pretty (Decl a) where
     pPrint = pPrint . simp
 
 
--- | A function attribute.
-data FunctionAttribute a = External a
+-- | A declaration attribute.
+data Attribute a = External a
     deriving (Functor, Show)
 
-instance Annotated FunctionAttribute where
+instance Annotated Attribute where
     ann (External a) = a
 
-instance Eq (FunctionAttribute a) where
+instance Eq (Attribute a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (FunctionAttribute a) S.FunctionAttribute where
+instance Simplifiable (Attribute a) S.Attribute where
     simp (External _) = S.External
 
-instance Pretty (FunctionAttribute a) where
+instance Pretty (Attribute a) where
     pPrint = pPrint . simp
 
 

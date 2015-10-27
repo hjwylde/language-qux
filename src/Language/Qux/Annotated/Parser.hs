@@ -20,7 +20,7 @@ module Language.Qux.Annotated.Parser (
     sourceName, sourceLine, sourceColumn,
 
     -- * Parsers
-    id_, program, decl, stmt, expr, value, type_,
+    id_, program, decl, attribute, stmt, expr, value, type_,
 ) where
 
 import Control.Monad.State
@@ -65,12 +65,12 @@ program = do
 
 -- | 'Decl' parser.
 decl :: Parser (Decl SourcePos)
-decl = choice [functionDecl, importDecl] <?> "declaration"
+decl = choice [functionDecl, importDecl, typeDecl] <?> "declaration"
     where
         functionDecl    = do
             pos <- getPosition
 
-            attrs <- many functionAttribute
+            attrs <- many attribute
             name <- id_
             symbol_ "::"
             parameterTypes <- withPos $ (try $ (fmap (,) type_) <+/> id_) `endBy` rightArrow
@@ -85,10 +85,18 @@ decl = choice [functionDecl, importDecl] <?> "declaration"
             id <- id_ `sepBy1` dot
 
             return $ ImportDecl pos id
+        typeDecl        = do
+            pos <- getPosition
 
--- | 'FunctionAttribute' parser.
-functionAttribute :: Parser (FunctionAttribute SourcePos)
-functionAttribute = getPosition >>= \pos -> External pos <$ reserved "external"
+            reserved "type"
+            attrs <- many attribute
+            name <- id_
+
+            return $ TypeDecl pos attrs name
+
+-- | 'Attribute' parser.
+attribute :: Parser (Attribute SourcePos)
+attribute = getPosition >>= \pos -> External pos <$ reserved "external"
 
 -- | 'Stmt' parser.
 stmt :: Parser (Stmt SourcePos)
