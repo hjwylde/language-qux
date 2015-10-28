@@ -20,7 +20,7 @@ module Language.Qux.Annotated.Parser (
     sourceName, sourceLine, sourceColumn,
 
     -- * Parsers
-    id_, program, decl, attribute, stmt, expr, value, type_,
+    id_, typeId, program, decl, attribute, stmt, expr, value, type_,
 ) where
 
 import Control.Monad.State
@@ -44,9 +44,13 @@ parse :: Parser a -> SourceName -> String -> Except ParseError a
 parse parser sourceName input = except $ runIndent sourceName (runParserT parser () sourceName input)
 
 
--- | 'Id' parser.
+-- | 'Id' parser (must start with a lowercase letter or underscore).
 id_ :: Parser (Id SourcePos)
 id_ = Id <$> getPosition <*> identifier <?> "identifier"
+
+-- | 'Id' parser for types (must start with an uppercase letter).
+typeId :: Parser (Id SourcePos)
+typeId = Id <$> getPosition <*> typeIdentifier <?> "type identifier"
 
 -- | 'Program' parser.
 program :: Parser (Program SourcePos)
@@ -65,12 +69,16 @@ program = do
 
 -- | 'Decl' parser.
 decl :: Parser (Decl SourcePos)
-decl = choice [functionDecl, importDecl, typeDecl] <?> "declaration"
+decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
     where
-        functionDecl    = do
+        functionOrTypeDecl = do
             pos <- getPosition
 
             attrs <- many attribute
+
+            choice [functionDecl pos attrs, typeDecl pos attrs] <?> "function or type declaration"
+
+        functionDecl pos attrs = do
             name <- id_
             symbol_ "::"
             parameterTypes <- withPos $ (try $ (fmap (,) type_) <+/> id_) `endBy` rightArrow
@@ -78,21 +86,20 @@ decl = choice [functionDecl, importDecl, typeDecl] <?> "declaration"
             stmts <- if External undefined `elem` attrs then return [] else colon >> indented >> block stmt
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
-        importDecl      = do
+
+        typeDecl pos attrs = do
+            reserved "type"
+            name <- typeId
+
+            return $ TypeDecl pos attrs name
+
+        importDecl = do
             pos <- getPosition
 
             reserved "import"
             id <- id_ `sepBy1` dot
 
             return $ ImportDecl pos id
-        typeDecl        = do
-            pos <- getPosition
-
-            reserved "type"
-            attrs <- many attribute
-            name <- id_
-
-            return $ TypeDecl pos attrs name
 
 -- | 'Attribute' parser.
 attribute :: Parser (Attribute SourcePos)

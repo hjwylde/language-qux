@@ -28,7 +28,10 @@ charLiteral :: ParsecT String u (State SourcePos) Char
 charLiteral = Token.charLiteral lexer
 
 identifier :: ParsecT String u (State SourcePos) String
-identifier = Token.identifier lexer
+identifier = lookAhead (lower <|> char '_') *> Token.identifier lexer
+
+typeIdentifier :: ParsecT String u (State SourcePos) String
+typeIdentifier = lookAhead upper *> Token.identifier lexer
 
 natural :: ParsecT String u (State SourcePos) Integer
 natural = Token.natural lexer
@@ -79,7 +82,7 @@ quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments id
             commentEnd      = "*/"
             commentLine     = "#"
             nestedComments  = False
-            identStart      = lower <|> char '_'
+            identStart      = letter <|> char '_'
             identLetter     = alphaNum <|> oneOf ['_', '\'']
             opStart         = oneOf []
             opLetter        = oneOf []
