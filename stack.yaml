@@ -2,5 +2,5 @@ packages:
 - '.'
 
 resolver:   lts-3.10
-extra-deps: ['llvm-general-pure-3.4.5.4']
+extra-deps: ['llvm-general-pure-3.5.0.0']
 

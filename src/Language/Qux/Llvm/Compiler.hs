@@ -186,7 +186,7 @@ compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
     n <- freeName
 
     append $ Name n := Call {
-        isTailCall              = False,
+        tailCallKind            = Nothing,
         Llvm.callingConvention  = C,
         Llvm.returnAttributes   = [],
         function                = Right $ ConstantOperand $ GlobalReference (compileType type_) (Name $ mangle id),
