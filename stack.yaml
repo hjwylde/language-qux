@@ -1,6 +1,8 @@
 packages:
 - '.'
 
-resolver:   lts-3.10
-extra-deps: ['llvm-general-pure-3.5.0.0']
+resolver: lts-3.10
+
+extra-deps:
+- llvm-general-pure-3.5.0.0
 
