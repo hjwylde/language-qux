@@ -8,7 +8,6 @@
 * Added in `external` function attribute. ([#16](https://github.com/qux-lang/language-qux/issues/16))
 * Added in `Char` type and character literals. ([#10](https://github.com/qux-lang/language-qux/issues/10))
 * Added in external type declarations. ([#27](https://github.com/qux-lang/language-qux/issues/27))
-* Updated to use LLVM 3.5. ([#7](https://github.com/qux-lang/language-qux/issues/7))
 
 *Minor*
 * Added in exceptions from the name and type resolvers. ([#13](https://github.com/qux-lang/language-qux/issues/13), [#19](https://github.com/qux-lang/language-qux/issues/19))
