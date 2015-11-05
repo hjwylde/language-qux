@@ -75,7 +75,7 @@ narrowContext context (Program module_' decls) = context {
 -- | Returns a specific context for the given program.
 --   @context programs program = narrowContext (baseContext programs) program@.
 context :: [Program] -> Program -> Context
-context programs program = narrowContext (baseContext programs) program
+context programs = narrowContext (baseContext programs)
 
 
 -- | Filters the local functions from the context.

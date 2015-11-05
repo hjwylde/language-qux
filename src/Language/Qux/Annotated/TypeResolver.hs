@@ -126,9 +126,9 @@ resolveExpr (Ann.ListExpr pos elements)     = do
 
     let types = map extractType elements'
 
-    case length (nub types) == 1 of
-        True    -> return $ Ann.TypedExpr pos (ListType $ head types) (Ann.ListExpr pos elements')
-        False   -> error "internal error: top type not implemented"
+    if length (nub types) == 1
+        then return $ Ann.TypedExpr pos (ListType $ head types) (Ann.ListExpr pos elements')
+        else error "internal error: top type not implemented"
 resolveExpr e@(Ann.TypedExpr {})            = return e
 resolveExpr (Ann.UnaryExpr pos op expr)     = do
     expr' <- resolveExpr expr

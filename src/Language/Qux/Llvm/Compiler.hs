@@ -207,7 +207,7 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
         Len -> undefined
         Neg -> append $ Name n := Llvm.Mul {
             nsw = False, nuw = False, metadata = [],
-            operand0 = operand, operand1 = (ConstantOperand $ Int { integerBits = 32, integerValue = -1 })
+            operand0 = operand, operand1 = ConstantOperand Int { integerBits = 32, integerValue = -1 }
             }
 
     return $ LocalReference (compileType type_) (Name n)

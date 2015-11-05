@@ -61,7 +61,7 @@ execCheck check context = execWriter $ runReaderT check context
 checkProgram :: Ann.Program SourcePos -> Check ()
 checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
-    | otherwise         = tell $ [DuplicateFunctionName pos name | (Ann.FunctionDecl _ _ (Ann.Id pos name) _ _) <- duplicates]
+    | otherwise         = tell [DuplicateFunctionName pos name | (Ann.FunctionDecl _ _ (Ann.Id pos name) _ _) <- duplicates]
     where
         duplicates                  = functionDecls \\ nubBy ((==) `on` name . simp) functionDecls
         functionDecls               = [decl | decl@(Ann.FunctionDecl {}) <- decls]
@@ -72,7 +72,7 @@ checkProgram (Ann.Program _ _ decls)
 checkDecl :: Ann.Decl SourcePos -> Check ()
 checkDecl (Ann.FunctionDecl _ _ _ type_ stmts)
     | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
-    | otherwise         = tell $ [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
+    | otherwise         = tell [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
     where
         duplicates = type_ \\ nubBy ((==) `on` simp . snd) type_
 checkDecl _                                         = return ()
@@ -117,7 +117,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = asks (Map.
 checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))         = do
     let (ListType inner) = type_
 
-    mapM_ (flip expectExpr [inner]) elements
+    mapM_ (`expectExpr` [inner]) elements
 
     return type_
 checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
