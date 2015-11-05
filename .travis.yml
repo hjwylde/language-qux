@@ -5,7 +5,7 @@ language: c
 addons:
     apt:
         packages:
-        - libgmp3-dev
+        - libgmp-dev
 
 cache:
     directories:
@@ -24,7 +24,9 @@ before_install:
 
 install:
 - travis_wait stack $ARGS --no-terminal --skip-ghc-check setup
+- stack --resolver lts install hlint
 
 script:
 - stack $ARGS --no-terminal --skip-ghc-check test
+- hlint .
 
