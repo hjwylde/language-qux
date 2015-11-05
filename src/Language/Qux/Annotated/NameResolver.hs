@@ -57,8 +57,8 @@ functionFromName :: Ann.Id SourcePos -> Resolve [Id]
 functionFromName (Ann.Id pos name) = do
     ids <- asks $ Map.keys . flip functionsFromName name
 
-    when (length ids == 0) $ tell [UndefinedFunctionCall pos name]
-    when (length ids > 1)  $ tell [AmbiguousFunctionCall pos name (map init ids)]
+    when (null ids)         $ tell [UndefinedFunctionCall pos name]
+    when (length ids > 1)   $ tell [AmbiguousFunctionCall pos name (map init ids)]
 
     return $ head ids
 
@@ -116,12 +116,12 @@ resolveStmt (Ann.WhileStmt pos condition stmts)             = do
 
 -- | Resolves the names of an expression.
 resolveExpr :: Ann.Expr SourcePos -> StateT Locals Resolve (Ann.Expr SourcePos)
-resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (elem $ simp name) >>= \member -> case member of
-    True    -> do
-        when (length arguments /= 0) $ tell [InvalidVariableAccess pos (simp name)]
+resolveExpr (Ann.ApplicationExpr pos name arguments)    = gets (elem $ simp name) >>= \member -> if member
+    then do
+        unless (null arguments) $ tell [InvalidVariableAccess pos (simp name)]
 
         return $ Ann.VariableExpr pos name
-    False   -> do
+    else do
         id          <- lift $ functionFromName name
         arguments_  <- mapM resolveExpr arguments
 

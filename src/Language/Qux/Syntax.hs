@@ -41,9 +41,8 @@ data Program = Program [Id] [Decl]
     deriving (Eq, Show)
 
 instance Pretty Program where
-    pPrint (Program module_ decls) = vcat $ map ($+$ text "") ([
-        text "module" <+> hcat (punctuate (char '.') (map text module_))
-        ] ++ map pPrint decls)
+    pPrint (Program module_ decls) = vcat . map ($+$ text "") $
+        (text "module" <+> hcat (punctuate (char '.') (map text module_))) : map pPrint decls
 
 
 -- | A declaration.
@@ -213,5 +212,5 @@ pShow = renderStyle (style { mode = OneLineMode }) . pPrint
 -- Helper methods
 
 block :: [Stmt] -> Doc
-block = vcat . (map pPrint)
+block = vcat . map pPrint
 

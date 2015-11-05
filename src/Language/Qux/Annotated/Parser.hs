@@ -81,7 +81,7 @@ decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
         functionDecl pos attrs = do
             name <- id_
             symbol_ "::"
-            parameterTypes <- withPos $ (try $ (fmap (,) type_) <+/> id_) `endBy` rightArrow
+            parameterTypes <- withPos $ try (fmap (,) type_ <+/> id_) `endBy` rightArrow
             returnType <- type_
             stmts <- if External undefined `elem` attrs then return [] else colon >> indented >> block stmt
 
@@ -171,10 +171,10 @@ table = [
     ]
     ]
 
-binaryExpr :: BinaryOp -> String -> Parser ((Expr SourcePos) -> (Expr SourcePos) -> (Expr SourcePos))
+binaryExpr :: BinaryOp -> String -> Parser (Expr SourcePos -> Expr SourcePos -> Expr SourcePos)
 binaryExpr op sym = getPosition >>= \pos -> BinaryExpr pos op <$ operator sym
 
-unaryExpr :: UnaryOp -> String -> Parser ((Expr SourcePos) -> (Expr SourcePos))
+unaryExpr :: UnaryOp -> String -> Parser (Expr SourcePos -> Expr SourcePos)
 unaryExpr op sym = getPosition >>= \pos -> UnaryExpr pos op <$ operator sym
 
 -- |    'Value' parser.
