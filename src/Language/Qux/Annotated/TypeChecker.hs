@@ -32,7 +32,7 @@ import Control.Monad.State
 import Control.Monad.Writer
 
 import              Data.Function   (on)
-import              Data.List       ((\\), nubBy)
+import              Data.List       (groupBy, sortOn)
 import qualified    Data.Map        as Map
 
 import              Language.Qux.Annotated.Exception
@@ -61,20 +61,19 @@ execCheck check context = execWriter $ runReaderT check context
 checkProgram :: Ann.Program SourcePos -> Check ()
 checkProgram (Ann.Program _ _ decls)
     | null duplicates   = mapM_ checkDecl decls
-    | otherwise         = tell [DuplicateFunctionName pos name | (Ann.FunctionDecl _ _ (Ann.Id pos name) _ _) <- duplicates]
+    | otherwise         = tell $ map (uncurry DuplicateFunctionName) duplicates
     where
-        duplicates                  = functionDecls \\ nubBy ((==) `on` name . simp) functionDecls
-        functionDecls               = [decl | decl@(Ann.FunctionDecl {}) <- decls]
-        name (FunctionDecl _ n _ _) = n
-        name _                      = error "internal error: cannot get name of a non-function declaration"
+        duplicates      = concat $ filter ((> 1) . length) (groupBy ((==) `on` snd) functionDecls)
+        functionDecls   = sortOn snd [(pos, name) | (Ann.FunctionDecl _ _ (Ann.Id pos name) _ _) <- decls]
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
 checkDecl (Ann.FunctionDecl _ _ _ type_ stmts)
     | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
-    | otherwise         = tell [DuplicateParameterName pos name | (_, Ann.Id pos name) <- duplicates]
+    | otherwise         = tell $ map (uncurry DuplicateParameterName) duplicates
     where
-        duplicates = type_ \\ nubBy ((==) `on` simp . snd) type_
+        duplicates = concat $ filter ((> 1) . length) (groupBy ((==) `on` snd) parameterNames)
+        parameterNames = sortOn snd [(pos, name) | (_, Ann.Id pos name) <- type_]
 checkDecl _                                         = return ()
 
 checkBlock :: [Ann.Stmt SourcePos] -> StateT Locals Check ()
