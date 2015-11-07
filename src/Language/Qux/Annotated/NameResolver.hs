@@ -34,8 +34,9 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import              Data.List   ((\\), nub)
-import qualified    Data.Map    as Map
+import              Data.Function   (on)
+import              Data.List.Extra (groupBy, lower, nub)
+import qualified    Data.Map        as Map
 
 import              Language.Qux.Annotated.Exception
 import              Language.Qux.Annotated.Parser (SourcePos)
@@ -77,7 +78,7 @@ resolveProgram (Ann.Program pos module_ decls) = do
     let unfoundImports = filter (\(Ann.ImportDecl _ id) -> map simp id `notElem` foundImports) imports
     unless (null unfoundImports) $ tell [ImportNotFound pos (map simp id) | (Ann.ImportDecl pos id) <- unfoundImports]
 
-    let duplicateImports = imports \\ nub imports
+    let duplicateImports = concat $ filter ((> 1) . length) (groupBy ((==) `on` simp) imports)
     unless (null duplicateImports) $ tell [DuplicateImport pos (map simp id) | (Ann.ImportDecl pos id) <- duplicateImports]
 
     mapM resolveDecl decls >>= \decls' -> return $ Ann.Program pos module_ decls'
@@ -85,8 +86,8 @@ resolveProgram (Ann.Program pos module_ decls) = do
 -- | Resolves the names of a declaration.
 resolveDecl :: Ann.Decl SourcePos -> Resolve (Ann.Decl SourcePos)
 resolveDecl (Ann.FunctionDecl pos attrs name type_ stmts)   = do
-    let duplicateAttrs = attrs \\ nub attrs
-    unless (null duplicateAttrs) $ tell [DuplicateAttribute (Ann.ann attr) (show attr) | attr <- duplicateAttrs]
+    let duplicateAttrs = concat $ filter ((> 1) . length) (groupBy ((==) `on` simp) attrs)
+    unless (null duplicateAttrs) $ tell [DuplicateAttribute (Ann.ann attr) (lower . show $ simp attr) | attr <- duplicateAttrs]
 
     stmts' <- evalStateT (resolveBlock stmts) (map (simp . snd) type_)
 
