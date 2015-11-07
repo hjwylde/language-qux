@@ -92,6 +92,11 @@ resolveDecl (Ann.FunctionDecl pos attrs name type_ stmts)   = do
     stmts' <- evalStateT (resolveBlock stmts) (map (simp . snd) type_)
 
     return $ Ann.FunctionDecl pos attrs name type_ stmts'
+resolveDecl decl@(Ann.TypeDecl _ attrs _)                   = do
+    let duplicateAttrs = concat $ filter ((> 1) . length) (groupBy ((==) `on` simp) attrs)
+    unless (null duplicateAttrs) $ tell [DuplicateAttribute (Ann.ann attr) (lower . show $ simp attr) | attr <- duplicateAttrs]
+
+    return decl
 resolveDecl decl                                            = return decl
 
 resolveBlock :: [Ann.Stmt SourcePos] -> StateT Locals Resolve [Ann.Stmt SourcePos]
