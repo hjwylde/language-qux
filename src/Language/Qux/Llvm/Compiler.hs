@@ -145,6 +145,7 @@ compileExpr (TypedExpr type_ (BinaryExpr Qux.Acc lhs rhs)) = compileExpr (TypedE
         accPrefix (ListType CharType)       = "z"
         accPrefix (ListType IntType)        = "z"
         accPrefix (ListType NilType)        = error "internal error: compilation for nil not implemented"
+        accPrefix _                         = error "internal error: cannot compile an access on a non-list expression"
 compileExpr (TypedExpr type_@(ListType _) (BinaryExpr Qux.Add lhs rhs)) = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "concat"] [lhs, rhs]))
 compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))                   = do
     lhsOperand <- compileExpr lhs
