@@ -138,8 +138,15 @@ compileStmt (WhileStmt condition stmts)             = do
     terminate $ Do Llvm.Unreachable { metadata' = [] }
 
 compileExpr :: Expr -> StateT Builder (Reader Context) Operand
-compileExpr (TypedExpr type_ (BinaryExpr Qux.Acc lhs rhs))  = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "acc"] [lhs, rhs]))
-compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))       = do
+compileExpr (TypedExpr type_ (BinaryExpr Qux.Acc lhs rhs)) = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", accPrefix type_ ++ "_acc"] [lhs, rhs]))
+    where
+        accPrefix (ListType (ListType _))   = "l"
+        accPrefix (ListType BoolType)       = "z"
+        accPrefix (ListType CharType)       = "z"
+        accPrefix (ListType IntType)        = "z"
+        accPrefix (ListType NilType)        = error "internal error: compilation for nil not implemented"
+compileExpr (TypedExpr type_@(ListType _) (BinaryExpr Qux.Add lhs rhs)) = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "concat"] [lhs, rhs]))
+compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))                   = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
 
@@ -180,7 +187,7 @@ compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))       = do
         Qux.Neq -> do
             append $ Name n := Llvm.ICmp { Llvm.iPredicate = NE, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
             return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
+compileExpr (TypedExpr type_ (CallExpr id arguments))                   = do
     operands <- mapM compileExpr arguments
 
     n <- freeName
@@ -196,9 +203,9 @@ compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
         }
 
     return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr type_ (ListExpr elements))           = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "new"] elements))
-compileExpr (TypedExpr type_ (UnaryExpr Len expr))          = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "len"] [expr]))
-compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
+compileExpr (TypedExpr type_ (ListExpr elements))                       = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "new"] elements))
+compileExpr (TypedExpr type_ (UnaryExpr Len expr))                      = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "len"] [expr]))
+compileExpr (TypedExpr type_ (UnaryExpr op expr))                       = do
     operand <- compileExpr expr
 
     n <- freeName
@@ -211,9 +218,9 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
             }
 
     return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr _ (ValueExpr value))                 = return $ ConstantOperand (compileValue value)
-compileExpr (TypedExpr type_ (VariableExpr name))           = return $ LocalReference (compileType type_) (Name name)
-compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
+compileExpr (TypedExpr _ (ValueExpr value))                             = return $ ConstantOperand (compileValue value)
+compileExpr (TypedExpr type_ (VariableExpr name))                       = return $ LocalReference (compileType type_) (Name name)
+compileExpr _                                                           = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
 compileValue :: Value -> Constant
 compileValue (BoolValue bool)   = Int {
