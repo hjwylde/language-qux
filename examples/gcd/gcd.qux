@@ -1,0 +1,19 @@
+module gcd
+
+main :: Int:
+    return gcd 14 21
+
+gcd :: Int a -> Int b -> Int:
+    if a == b:
+        return a
+
+    if a > b:
+        return gcd (a - b) b
+    else:
+        return gcd a (b - a)
+
+gcd2 :: Int a -> Int b -> Int:
+    if b == 0:
+        return a
+    else:
+        return gcd2 b (a % b)

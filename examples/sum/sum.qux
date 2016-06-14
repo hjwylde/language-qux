@@ -1,0 +1,10 @@
+module sum
+
+main :: Int:
+    return sum [5, 10, 2] 0
+
+sum :: [Int] xs -> Int i -> Int:
+    if i < |xs|:
+        return xs !! i + sum xs (i + 1)
+    else:
+        return 0

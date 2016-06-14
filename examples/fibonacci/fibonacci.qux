@@ -1,0 +1,10 @@
+module fibonacci
+
+main :: Int:
+    return fib 5
+
+fib :: Int n -> Int:
+    if n <= 2:
+        return 1
+
+    return fib (n - 1) + fib (n - 2)

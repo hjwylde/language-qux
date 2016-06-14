@@ -1,0 +1,10 @@
+module factorial
+
+main :: Int:
+    return fact 5
+
+fact :: Int i -> Int:
+    if i <= 1:
+        return 1
+
+    return i * fact (i - 1)
