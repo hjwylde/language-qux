@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Annotated.NameResolver
 Description : Name resolving functions that transform the abstract syntax tree to a name-resolved one.
@@ -152,4 +151,3 @@ resolveExpr (Ann.UnaryExpr pos op expr)                 = do
     return $ Ann.UnaryExpr pos op expr'
 resolveExpr e@(Ann.ValueExpr {})                        = return e
 resolveExpr e@(Ann.VariableExpr {})                     = return e
-

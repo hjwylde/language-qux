@@ -1,4 +1,3 @@
-
 {-|
 Module      : Main
 
@@ -19,4 +18,3 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Tests" []
-

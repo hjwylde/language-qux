@@ -1,16 +1,16 @@
 # language-qux
 
-[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/1.0.0/active.svg)](http://www.repostatus.org/#active)
-[![Build Status](https://travis-ci.org/qux-lang/language-qux.svg?branch=master)](https://travis-ci.org/qux-lang/language-qux)
-[![Release](https://img.shields.io/github/release/qux-lang/language-qux.svg)](https://github.com/qux-lang/language-qux/releases)
+[![Project Status: WIP - Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](http://www.repostatus.org/badges/latest/wip.svg)](http://www.repostatus.org/#wip)
+[![Build Status](https://travis-ci.org/hjwylde/language-qux.svg?branch=master)](https://travis-ci.org/hjwylde/language-qux)
+[![Release](https://img.shields.io/github/release/hjwylde/language-qux.svg)](https://github.com/hjwylde/language-qux/releases)
 
 Qux is an experimental language developed from the ground up with the aim of supporting extended
     static checks at compile time.
 This package provides tools for working with it (parsing, compiling, pretty printing and type
     checking) within Haskell code.
 
-If you're interested in actually compiling Qux files, see [here](https://github.com/qux-lang/qux)
-    for the binary.
+If you're interested in actually compiling Qux files, see [here](https://github.com/hjwylde/qux) for
+    the binary.
 
 ### Aims
 
@@ -35,12 +35,10 @@ There are a few core tasks in mind that need to be achieved before v1 can come a
 * Compilation to LLVM.
 
 Of course, there will be minor tasks to accompany this release, such as documentation on the language features.
-The above merely mark the core functionality required!
+The above merely mark the core functionality required.
 
 ### Tasks for v2
 
 * Pre- and post-conditions on methods (using the `requires` and `ensures` keywords).
 * Compilation and verification of method contracts.
-* An intermediary language that retains contract information (see the
-    [quux language](https://github.com/qux-lang/language-quux "quux")).
-
+* An intermediary language that retains contract information.

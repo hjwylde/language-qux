@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Version
 Description : Haskell constant of the language version.
@@ -17,4 +16,3 @@ module Language.Qux.Version (
 ) where
 
 import Paths_language_qux (version)
-

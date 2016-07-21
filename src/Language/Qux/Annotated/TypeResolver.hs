@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Annotated.TypeResolver
 Description : Type resolving functions that transform the abstract syntax tree to a typed one.
@@ -154,4 +153,3 @@ resolveValue NilValue               = NilType
 extractType :: Ann.Expr a -> Type
 extractType (Ann.TypedExpr _ type_ _)  = type_
 extractType _                          = error "internal error: type resolution not complete"
-

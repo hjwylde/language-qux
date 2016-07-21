@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Annotated.Syntax
 Description : Abstract syntax tree nodes with annotations.
@@ -238,4 +237,3 @@ qualify id = Id (ann $ head id) (intercalate "." (map simp id))
 -- | Mangles the identifier into a single 'Id' joined with underscores.
 mangle :: [Id a] -> Id a
 mangle id = Id (ann $ head id) (intercalate "_" (map simp id))
-

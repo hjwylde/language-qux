@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Lexer
 Description : A Parsec lexer for the Qux language.
@@ -107,4 +106,3 @@ operators = [
     "<", "<=", ">", ">=",
     "==", "!="
     ]
-

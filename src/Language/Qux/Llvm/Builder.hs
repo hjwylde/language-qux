@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Llvm.Builder
 Description : Build utilities for the LLVM compiler.
@@ -80,4 +79,3 @@ freeName = (("." ++) . show) <$> freeUnName
 
 freeUnName :: Monad m => MonadState Builder m => m Word
 freeUnName = gets counter <* modify (\s -> s { counter = counter s + 1 })
-

@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Llvm.Compiler
 Description : Compiles a Qux program into LLVM IR.
@@ -237,4 +236,3 @@ compileType CharType        = i8
 compileType IntType         = i32
 compileType (ListType _)    = NamedTypeReference $ Name (mangle ["qux", "lang", "list", "List"])
 compileType NilType         = error "internal error: compilation for nil types not implemented"
-

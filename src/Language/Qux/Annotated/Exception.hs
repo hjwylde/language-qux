@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Annotated.Exception
 Description : Exceptions and utility functions.
@@ -121,4 +120,3 @@ instance Show ResolveException where
 sentence :: String -> [String] -> String
 sentence _ [x]  = x
 sentence sep xs = unwords [intercalate ", " (map show $ init xs), sep, show $ last xs]
-

@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Context
 Description : Context data type and utility methods.
@@ -119,4 +118,3 @@ typesFromName context name = filter (\id -> last id == name) (types context)
 -- | Filters the types that are exported by the given module.
 typesFromModule :: Context -> [Id] -> [[Id]]
 typesFromModule context id = filter (\id' -> init id' == id) (types context)
-

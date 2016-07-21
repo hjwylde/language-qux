@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Annotated.Parser
 Description : A Parsec indentation-based parser for generating a program.
@@ -198,4 +197,3 @@ type_ = getPosition >>= \pos -> choice [
     ListType pos <$> brackets type_,
     NilType  pos <$  reserved "Nil"
     ] <?> "type"
-

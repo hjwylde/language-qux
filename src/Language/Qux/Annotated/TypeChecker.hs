@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Annotated.TypeChecker
 Description : Type checking functions to verify that a 'Program' is type-safe.
@@ -151,4 +150,3 @@ attach pos CharType         = Ann.CharType pos
 attach pos IntType          = Ann.IntType  pos
 attach pos (ListType inner) = Ann.ListType pos (attach undefined inner)
 attach pos NilType          = Ann.NilType  pos
-

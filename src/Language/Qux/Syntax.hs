@@ -1,4 +1,3 @@
-
 {-|
 Module      : Language.Qux.Syntax
 Description : Abstract syntax tree nodes.
@@ -213,4 +212,3 @@ pShow = renderStyle (style { mode = OneLineMode }) . pPrint
 
 block :: [Stmt] -> Doc
 block = vcat . map pPrint
-
