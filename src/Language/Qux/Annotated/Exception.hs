@@ -22,7 +22,7 @@ module Language.Qux.Annotated.Exception (
 
 import Control.Exception
 
-import Data.List        (intercalate)
+import Data.List     (intercalate)
 import Data.Typeable
 
 import Language.Qux.Annotated.Parser (SourcePos)

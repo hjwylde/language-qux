@@ -30,17 +30,17 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import              Data.Function   (on)
-import              Data.List       (groupBy, sortOn)
-import qualified    Data.Map        as Map
+import           Data.Function (on)
+import           Data.List     (groupBy, sortOn)
+import qualified Data.Map      as Map
 
-import              Language.Qux.Annotated.Exception
-import              Language.Qux.Annotated.Parser       (SourcePos)
-import              Language.Qux.Annotated.Syntax       (simp)
-import qualified    Language.Qux.Annotated.Syntax       as Ann
-import              Language.Qux.Annotated.TypeResolver
-import              Language.Qux.Context
-import              Language.Qux.Syntax
+import           Language.Qux.Annotated.Exception
+import           Language.Qux.Annotated.Parser       (SourcePos)
+import           Language.Qux.Annotated.Syntax       (simp)
+import qualified Language.Qux.Annotated.Syntax       as Ann
+import           Language.Qux.Annotated.TypeResolver
+import           Language.Qux.Context
+import           Language.Qux.Syntax
 
 
 -- | A type that allows collecting errors while type checking a program.

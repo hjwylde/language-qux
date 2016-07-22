@@ -32,17 +32,17 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import              Data.List   (nub)
-import              Data.Map    (Map)
-import qualified    Data.Map    as Map
-import              Data.Maybe  (fromJust)
+import           Data.List  (nub)
+import           Data.Map   (Map)
+import qualified Data.Map   as Map
+import           Data.Maybe (fromJust)
 
-import              Language.Qux.Annotated.Exception
-import              Language.Qux.Annotated.Parser       (SourcePos)
-import              Language.Qux.Annotated.Syntax       (simp)
-import qualified    Language.Qux.Annotated.Syntax       as Ann
-import              Language.Qux.Context
-import              Language.Qux.Syntax
+import           Language.Qux.Annotated.Exception
+import           Language.Qux.Annotated.Parser    (SourcePos)
+import           Language.Qux.Annotated.Syntax    (simp)
+import qualified Language.Qux.Annotated.Syntax    as Ann
+import           Language.Qux.Context
+import           Language.Qux.Syntax
 
 
 -- | A type that allows resolving types.

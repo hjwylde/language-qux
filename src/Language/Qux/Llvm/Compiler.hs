@@ -21,18 +21,18 @@ module Language.Qux.Llvm.Compiler (
 import Control.Monad.Reader
 import Control.Monad.State
 
-import              Data.Char   (digitToInt)
-import qualified    Data.Map    as Map
-import              Data.Maybe  (fromJust, isNothing)
+import           Data.Char  (digitToInt)
+import qualified Data.Map   as Map
+import           Data.Maybe (fromJust, isNothing)
 
 import Language.Qux.Context
-import Language.Qux.Llvm.Builder    as B
-import Language.Qux.Syntax          as Qux
+import Language.Qux.Llvm.Builder as B
+import Language.Qux.Syntax       as Qux
 
-import LLVM.General.AST                     as Llvm
+import LLVM.General.AST                   as Llvm
 import LLVM.General.AST.CallingConvention
-import LLVM.General.AST.Constant            hiding (exact, nsw, nuw, operand0, operand1)
-import LLVM.General.AST.Global              as G
+import LLVM.General.AST.Constant          hiding (exact, nsw, nuw, operand0, operand1)
+import LLVM.General.AST.Global            as G
 import LLVM.General.AST.IntegerPredicate
 import LLVM.General.AST.Type
 

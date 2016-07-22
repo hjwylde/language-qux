@@ -21,20 +21,20 @@ module Language.Qux.Context (
     localTypes, importedTypes, typesFromName, typesFromModule,
 ) where
 
-import              Data.List.Extra (nubOrd)
-import              Data.Map        (Map)
-import qualified    Data.Map        as Map
+import           Data.List.Extra (nubOrd)
+import           Data.Map        (Map)
+import qualified Data.Map        as Map
 
 import Language.Qux.Syntax
 
 
 -- | Global context that holds function definition types.
 data Context = Context {
-    module_     :: [Id],                    -- ^ The current module identifier.
-    imports     :: [[Id]],                  -- ^ The imports required by the module.
-    functions   :: Map [Id] [(Type, Id)],   -- ^ A map of qualified identifiers to function types
+    module_   :: [Id],                    -- ^ The current module identifier.
+    imports   :: [[Id]],                  -- ^ The imports required by the module.
+    functions :: Map [Id] [(Type, Id)],   -- ^ A map of qualified identifiers to function types
                                             --   (including parameter names).
-    types       :: [[Id]]                   -- ^ A list of qualified types.
+    types     :: [[Id]]                   -- ^ A list of qualified types.
     }
     deriving (Eq, Show)
 

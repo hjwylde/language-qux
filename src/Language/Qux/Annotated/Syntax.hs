@@ -15,10 +15,10 @@ The instances of 'Eq' are defined in terms of the simplified nodes, i.e., the an
     impact node equality.
 -}
 
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Language.Qux.Annotated.Syntax (
     -- * Type classes
@@ -44,8 +44,8 @@ import Data.Function    (on)
 import Data.List        (intercalate)
 import Data.Tuple.Extra ((***))
 
-import              Language.Qux.Syntax (BinaryOp(..), UnaryOp(..), Value(..), pShow)
-import qualified    Language.Qux.Syntax as S
+import           Language.Qux.Syntax (BinaryOp (..), UnaryOp (..), Value (..), pShow)
+import qualified Language.Qux.Syntax as S
 
 import Text.PrettyPrint.HughesPJClass
 

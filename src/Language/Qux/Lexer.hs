@@ -15,8 +15,8 @@ module Language.Qux.Lexer where
 
 import Control.Monad.State
 
-import              Text.Parsec         hiding (State)
-import qualified    Text.Parsec.Token   as Token
+import           Text.Parsec       hiding (State)
+import qualified Text.Parsec.Token as Token
 
 
 lexer :: Token.GenTokenParser String u (State SourcePos)
