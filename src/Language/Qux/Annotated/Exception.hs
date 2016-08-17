@@ -22,12 +22,11 @@ module Language.Qux.Annotated.Exception (
 
 import Control.Exception
 
-import Data.List     (intercalate)
+import Data.List
 import Data.Typeable
 
-import Language.Qux.Annotated.Parser (SourcePos)
+import Language.Qux.Annotated.Parser
 import Language.Qux.Syntax
-
 
 -- | An exception that has a source position and message.
 class CompilerException e where
@@ -38,7 +37,6 @@ class CompilerException e where
     message :: e -> String
 
     -- TODO (hjw): add a posMessage and remove Show instances
-
 
 -- | An exception that occurs during type checking. See "Language.Qux.Annotated.TypeChecker".
 data TypeException  = TypeException SourcePos String        -- ^ A generic type exception with a
@@ -77,7 +75,6 @@ instance Exception TypeException
 instance Show TypeException where
     show e = show (pos e) ++ ":\n" ++ message e
 
-
 -- | An exception that occurs during name resolution. See "Language.Qux.Annotated.NameResolver".
 data ResolveException   = ResolveException SourcePos String         -- ^ A generic type exception with a
                                                                     --   position and message.
@@ -113,7 +110,6 @@ instance Exception ResolveException
 
 instance Show ResolveException where
     show e = show (pos e) ++ ":\n" ++ message e
-
 
 -- Helper methods
 

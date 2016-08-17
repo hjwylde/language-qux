@@ -32,7 +32,6 @@ import Text.Parsec        hiding (State, parse)
 import Text.Parsec.Expr
 import Text.Parsec.Indent
 
-
 -- | A 'ParsecT' that retains indentation information.
 type Parser a = ParsecT String () (State SourcePos) a
 
@@ -41,7 +40,6 @@ type Parser a = ParsecT String () (State SourcePos) a
 --   This method wraps 'runParserT' by running the indentation resolver over the parser's state.
 parse :: Parser a -> SourceName -> String -> Except ParseError a
 parse parser sourceName input = except $ runIndent sourceName (runParserT parser () sourceName input)
-
 
 -- | 'Id' parser (must start with a lowercase letter or underscore).
 id_ :: Parser (Id SourcePos)

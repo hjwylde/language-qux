@@ -21,7 +21,6 @@ import Data.Map as Map
 
 import LLVM.General.AST
 
-
 data Builder = Builder {
     currentBlock    :: Name,
     blocks          :: Map Name BlockBuilder,
@@ -37,7 +36,6 @@ initialBuilder = Builder {
     }
     where
         name' = Name ".0"
-
 
 data BlockBuilder = BlockBuilder {
     name    :: Name,

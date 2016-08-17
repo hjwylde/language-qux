@@ -25,15 +25,13 @@ module Language.Qux.Syntax (
     pShow,
 ) where
 
-import Data.List.Extra (intercalate, lower)
+import Data.List.Extra
 
 import Text.PrettyPrint
 import Text.PrettyPrint.HughesPJClass
 
-
 -- | An identifier. Identifiers should match '[a-z_][a-zA-Z0-9_']*'.
 type Id = String
-
 
 -- | A program is a module identifier (list of 'Id''s) and a list of declarations.
 data Program = Program [Id] [Decl]
@@ -42,7 +40,6 @@ data Program = Program [Id] [Decl]
 instance Pretty Program where
     pPrint (Program module_ decls) = vcat . map ($+$ text "") $
         (text "module" <+> hcat (punctuate (char '.') (map text module_))) : map pPrint decls
-
 
 -- | A declaration.
 data Decl   = FunctionDecl [Attribute] Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
@@ -67,14 +64,12 @@ declarationDoc attrs name type_ = hsep $ map pPrint attrs ++ [text name, text ":
             (text " ->")
             [pPrint t <+> if p == "@" then empty else text p | (t, p) <- type_]
 
-
 -- | A declaration attribute.
 data Attribute = External
     deriving (Eq, Show)
 
 instance Pretty Attribute where
     pPrint = text . lower . show
-
 
 -- | A statement.
 data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false block of statements.
@@ -94,7 +89,6 @@ instance Pretty Stmt where
         text "while" <+> pPrint condition <> colon,
         nest 4 $ block stmts
         ]
-
 
 -- | A complex expression.
 data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name (unresolved) to call and the
@@ -120,7 +114,6 @@ instance Pretty Expr where
     pPrint (UnaryExpr op expr)              = pPrint op <> pPrint expr
     pPrint (ValueExpr value)                = pPrint value
     pPrint (VariableExpr name)              = text name
-
 
 -- | A binary operator.
 data BinaryOp   = Acc -- ^ List access.
@@ -151,7 +144,6 @@ instance Pretty BinaryOp where
     pPrint Eq  = text "=="
     pPrint Neq = text "!="
 
-
 -- | A unary operator.
 data UnaryOp    = Len -- ^ List length.
                 | Neg -- ^ Negation.
@@ -160,7 +152,6 @@ data UnaryOp    = Len -- ^ List length.
 instance Pretty UnaryOp where
     pPrint Len = text "length"
     pPrint Neg = text "-"
-
 
 -- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
@@ -177,7 +168,6 @@ instance Pretty Value where
     pPrint (ListValue elements) = brackets $ fsep (punctuate comma (map pPrint elements))
     pPrint NilValue             = text "nil"
 
-
 -- | A type.
 data Type   = BoolType
             | CharType
@@ -193,7 +183,6 @@ instance Pretty Type where
     pPrint (ListType inner) = brackets $ pPrint inner
     pPrint NilType          = text "Nil"
 
-
 -- | Qualifies the identifier into a single 'Id' joined with periods.
 qualify :: [Id] -> Id
 qualify = intercalate "."
@@ -202,11 +191,9 @@ qualify = intercalate "."
 mangle :: [Id] -> Id
 mangle = intercalate "_"
 
-
 -- | @pShow a@ pretty prints @a@ using a rending mode of 'OneLineMode'.
 pShow :: Pretty a => a -> String
 pShow = renderStyle (style { mode = OneLineMode }) . pPrint
-
 
 -- Helper methods
 

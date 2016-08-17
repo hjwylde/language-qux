@@ -30,18 +30,17 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import           Data.Function (on)
-import           Data.List     (groupBy, sortOn)
+import           Data.Function
+import           Data.List
 import qualified Data.Map      as Map
 
 import           Language.Qux.Annotated.Exception
-import           Language.Qux.Annotated.Parser       (SourcePos)
+import           Language.Qux.Annotated.Parser
 import           Language.Qux.Annotated.Syntax       (simp)
 import qualified Language.Qux.Annotated.Syntax       as Ann
 import           Language.Qux.Annotated.TypeResolver
 import           Language.Qux.Context
 import           Language.Qux.Syntax
-
 
 -- | A type that allows collecting errors while type checking a program.
 --   Requires a 'Context' for evaluation.
@@ -54,7 +53,6 @@ runCheck check context = runWriter $ runReaderT check context
 -- | Runs the given check with the context and extracts the exceptions.
 execCheck :: Check a -> Context -> [TypeException]
 execCheck check context = execWriter $ runReaderT check context
-
 
 -- | Type checks a program.
 checkProgram :: Ann.Program SourcePos -> Check ()
@@ -125,7 +123,6 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
 checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr {}))                = return type_
 checkExpr (Ann.TypedExpr _ type_ (Ann.VariableExpr {}))             = return type_
 checkExpr _                                                         = error "internal error: cannot check the type of a non-typed expression (try applying type resolution)"
-
 
 expectExpr :: Ann.Expr SourcePos -> [Type] -> StateT Locals Check Type
 expectExpr expr expects = do

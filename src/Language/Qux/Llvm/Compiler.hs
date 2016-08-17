@@ -21,23 +21,22 @@ module Language.Qux.Llvm.Compiler (
 import Control.Monad.Reader
 import Control.Monad.State
 
-import           Data.Char  (digitToInt)
+import           Data.Char
 import qualified Data.Map   as Map
-import           Data.Maybe (fromJust, isNothing)
+import           Data.Maybe
 
 import Language.Qux.Context
-import Language.Qux.Llvm.Builder as B
+import Language.Qux.Llvm.Builder as Builder
 import Language.Qux.Syntax       as Qux
 
 import LLVM.General.AST                   as Llvm
 import LLVM.General.AST.CallingConvention
 import LLVM.General.AST.Constant          hiding (exact, nsw, nuw, operand0, operand1)
-import LLVM.General.AST.Global            as G
+import LLVM.General.AST.Global            as Global
 import LLVM.General.AST.IntegerPredicate
 import LLVM.General.AST.Type
 
 import Prelude hiding (EQ)
-
 
 -- | Compiles the program into a LLVM 'Module'.
 --   Generally speaking, compilation is done using the defaults.
@@ -45,15 +44,15 @@ import Prelude hiding (EQ)
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
     importedFunctions' <- map (\(id, type_) -> GlobalDefinition functionDefaults {
-        G.name          = Name $ mangle id,
-        G.returnType    = compileType $ fst (last type_),
-        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+        Global.name         = Name $ mangle id,
+        Global.returnType   = compileType $ fst (last type_),
+        Global.parameters   = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
         }) . Map.toList <$> asks importedFunctions
 
     let externalFunctions = [GlobalDefinition functionDefaults {
-        G.name          = Name $ mangle (module_ ++ [name]),
-        G.returnType    = compileType $ fst (last type_),
-        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+        Global.name         = Name $ mangle (module_ ++ [name]),
+        Global.returnType   = compileType $ fst (last type_),
+        Global.parameters   = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
         } | (FunctionDecl attrs name type_ _) <- decls, External `elem` attrs]
 
     localFunctions <- mapM compileDecl [decl |
@@ -80,10 +79,10 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
     return $ GlobalDefinition functionDefaults {
-        G.name          = Name $ mangle (module_' ++ [name]),
-        G.returnType    = compileType $ fst (last type_),
-        G.parameters    = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
-        basicBlocks     = map (\b -> BasicBlock (B.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
+        Global.name         = Name $ mangle (module_' ++ [name]),
+        Global.returnType   = compileType $ fst (last type_),
+        Global.parameters   = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
+        basicBlocks     = map (\b -> BasicBlock (Builder.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"

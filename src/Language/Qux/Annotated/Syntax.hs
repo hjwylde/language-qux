@@ -40,15 +40,14 @@ module Language.Qux.Annotated.Syntax (
     pShow,
 ) where
 
-import Data.Function    (on)
-import Data.List        (intercalate)
-import Data.Tuple.Extra ((***))
+import Data.Function
+import Data.List
+import Data.Tuple.Extra
 
 import           Language.Qux.Syntax (BinaryOp (..), UnaryOp (..), Value (..), pShow)
 import qualified Language.Qux.Syntax as S
 
 import Text.PrettyPrint.HughesPJClass
-
 
 -- | An annotated class.
 --   Annotations are used for attaching data to a node, such as a 'Text.Parsec.SourcePos'.
@@ -60,7 +59,6 @@ class Annotated n where
 --   See "Language.Qux.Syntax" for simpler forms of the nodes defined here.
 class Simplifiable n r | n -> r where
     simp :: n -> r
-
 
 -- | An identifier. Identifiers should match '[a-z_][a-zA-Z0-9_']*'.
 data Id a = Id a String
@@ -78,7 +76,6 @@ instance Simplifiable (Id a) [Char] where
 instance Pretty (Id a) where
     pPrint = text . simp
 
-
 -- | A program is a module identifier (list of 'Id''s) and a list of declarations.
 data Program a = Program a [Id a] [Decl a]
     deriving (Functor, Show)
@@ -94,7 +91,6 @@ instance Simplifiable (Program a) S.Program where
 
 instance Pretty (Program a) where
     pPrint = pPrint . simp
-
 
 -- | A declaration.
 data Decl a = FunctionDecl a [Attribute a] (Id a) [(Type a, Id a)] [Stmt a] -- ^ A name, list of ('Type', 'Id') parameters and statements.
@@ -119,7 +115,6 @@ instance Simplifiable (Decl a) S.Decl where
 instance Pretty (Decl a) where
     pPrint = pPrint . simp
 
-
 -- | A declaration attribute.
 data Attribute a = External a
     deriving (Functor, Show)
@@ -135,7 +130,6 @@ instance Simplifiable (Attribute a) S.Attribute where
 
 instance Pretty (Attribute a) where
     pPrint = pPrint . simp
-
 
 -- | A statement.
 data Stmt a = IfStmt a (Expr a) [Stmt a] [Stmt a]   -- ^ A condition, true block and false block of statements.
@@ -158,7 +152,6 @@ instance Simplifiable (Stmt a) S.Stmt where
 
 instance Pretty (Stmt a) where
     pPrint = pPrint . simp
-
 
 -- | A complex expression.
 data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name (unresolved) to call
@@ -200,7 +193,6 @@ instance Simplifiable (Expr a) S.Expr where
 instance Pretty (Expr a) where
     pPrint = pPrint . simp
 
-
 -- | A type.
 data Type a = BoolType a
             | CharType a
@@ -228,7 +220,6 @@ instance Simplifiable (Type a) S.Type where
 
 instance Pretty (Type a) where
     pPrint = pPrint . simp
-
 
 -- | Qualifies the identifier into a single 'Id' joined with periods.
 qualify :: [Id a] -> Id a

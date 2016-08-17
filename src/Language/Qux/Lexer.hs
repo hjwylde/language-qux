@@ -18,10 +18,8 @@ import Control.Monad.State
 import           Text.Parsec       hiding (State)
 import qualified Text.Parsec.Token as Token
 
-
 lexer :: Token.GenTokenParser String u (State SourcePos)
 lexer = Token.makeTokenParser quxDef
-
 
 charLiteral :: ParsecT String u (State SourcePos) Char
 charLiteral = Token.charLiteral lexer
@@ -50,7 +48,6 @@ symbol_ = void . symbol
 whiteSpace :: ParsecT String u (State SourcePos) ()
 whiteSpace = Token.whiteSpace lexer
 
-
 brackets :: ParsecT String u (State SourcePos) a -> ParsecT String u (State SourcePos) a
 brackets = Token.brackets lexer
 
@@ -71,7 +68,6 @@ pipes p = Token.lexeme lexer $ between (symbol "|") (symbol "|") p
 
 rightArrow :: ParsecT String u (State SourcePos) ()
 rightArrow = symbol_ "->"
-
 
 quxDef :: Token.GenLanguageDef String u (State SourcePos)
 quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments identStart identLetter

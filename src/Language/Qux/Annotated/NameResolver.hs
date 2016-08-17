@@ -33,12 +33,12 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import           Data.Function   (on)
-import           Data.List.Extra (groupBy, lower, nub)
+import           Data.Function
+import           Data.List.Extra
 import qualified Data.Map        as Map
 
 import           Language.Qux.Annotated.Exception
-import           Language.Qux.Annotated.Parser    (SourcePos)
+import           Language.Qux.Annotated.Parser
 import           Language.Qux.Annotated.Syntax    (simp)
 import qualified Language.Qux.Annotated.Syntax    as Ann
 import           Language.Qux.Context
@@ -52,7 +52,6 @@ type Resolve = ReaderT Context (Writer [ResolveException])
 runResolve :: Resolve a -> Context -> (a, [ResolveException])
 runResolve resolve context = runWriter $ runReaderT resolve context
 
-
 functionFromName :: Ann.Id SourcePos -> Resolve [Id]
 functionFromName (Ann.Id pos name) = do
     ids <- asks $ Map.keys . flip functionsFromName name
@@ -62,11 +61,9 @@ functionFromName (Ann.Id pos name) = do
 
     return $ head ids
 
-
 -- | Local context.
 --   This is a list of local variable names.
 type Locals = [Id]
-
 
 -- | Resolves the names of a program.
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)

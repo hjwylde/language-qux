@@ -32,18 +32,17 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import           Data.List  (nub)
+import           Data.List
 import           Data.Map   (Map)
 import qualified Data.Map   as Map
-import           Data.Maybe (fromJust)
+import           Data.Maybe
 
 import           Language.Qux.Annotated.Exception
-import           Language.Qux.Annotated.Parser    (SourcePos)
+import           Language.Qux.Annotated.Parser
 import           Language.Qux.Annotated.Syntax    (simp)
 import qualified Language.Qux.Annotated.Syntax    as Ann
 import           Language.Qux.Context
 import           Language.Qux.Syntax
-
 
 -- | A type that allows resolving types.
 --   Requires a 'Context' for evaluation.
@@ -53,11 +52,9 @@ type Resolve = ReaderT Context (Writer [ResolveException])
 runResolve :: Resolve a -> Context -> (a, [ResolveException])
 runResolve resolve context = runWriter $ runReaderT resolve context
 
-
 -- | Local context.
 --   This is a map of variable names to types (e.g., parameters).
 type Locals = Map Id Type
-
 
 -- | Resolves the types of a program.
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)
