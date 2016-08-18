@@ -237,11 +237,18 @@ compileValue (IntValue int)     = Int
     , integerValue  = toInteger int
     }
 compileValue (ListValue _)      = error "internal error: cannot compile a list as a constant"
-compileValue NilValue           = error "internal error: compilation for nil not implemented"
+compileValue NilValue           = Struct
+    { structName        = Nothing
+    , Constant.isPacked = True
+    , memberValues      = []
+    }
 
 compileType :: Qux.Type -> Llvm.Type
 compileType BoolType        = i1
 compileType CharType        = i8
 compileType IntType         = i32
 compileType (ListType _)    = NamedTypeReference $ Name (mangle ["qux", "lang", "list", "List"])
-compileType NilType         = error "internal error: compilation for nil types not implemented"
+compileType NilType         = StructureType
+    { Type.isPacked = True
+    , elementTypes  = []
+    }
