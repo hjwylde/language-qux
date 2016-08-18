@@ -60,17 +60,3 @@ library
         parsec == 3.1.*,
         pretty >= 1.1.2 && < 1.2,
         transformers == 0.4.*
-
-test-suite language-qux-test
-    type:           exitcode-stdio-1.0
-    main-is:        Main.hs
-    hs-source-dirs: test/
-    ghc-options:    -threaded -with-rtsopts=-N
-
-    default-language: Haskell2010
-    build-depends:
-        base == 4.8.*,
-        language-qux,
-        tasty >= 0.10 && < 0.12,
-        tasty-hunit == 0.9.*,
-        tasty-quickcheck == 0.8.*
