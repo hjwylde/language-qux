@@ -65,9 +65,10 @@ checkProgram (Ann.Program _ _ decls)
 
 -- | Type checks a declaration.
 checkDecl :: Ann.Decl SourcePos -> Check ()
-checkDecl (Ann.FunctionDecl _ _ _ type_ stmts)
-    | null duplicates   = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
-    | otherwise         = tell $ map (uncurry DuplicateParameterName) duplicates
+checkDecl (Ann.FunctionDecl _ attrs _ type_ stmts)
+    | (Ann.External undefined) `elem` attrs
+        || null duplicates  = evalStateT (checkBlock stmts) (Map.fromList [(simp p, simp t) | (t, p) <- type_])
+    | otherwise                             = tell $ map (uncurry DuplicateParameterName) duplicates
     where
         duplicates = concat $ filter ((> 1) . length) (groupBy ((==) `on` snd) parameterNames)
         parameterNames = sortOn snd [(pos, name) | (_, Ann.Id pos name) <- type_]
