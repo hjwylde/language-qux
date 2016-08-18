@@ -244,6 +244,7 @@ compileValue NilValue           = Struct
     }
 
 compileType :: Qux.Type -> Llvm.Type
+compileType AnyType         = error "internal error: cannot compile an any type"
 compileType BoolType        = i1
 compileType CharType        = i8
 compileType IntType         = i32

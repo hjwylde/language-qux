@@ -196,7 +196,8 @@ value = choice
 -- | 'Type' parser.
 type_ :: Parser (Type SourcePos)
 type_ = getPosition >>= \pos -> choice
-    [ BoolType pos <$  reserved "Bool"
+    [ AnyType pos <$   reserved "Any"
+    , BoolType pos <$  reserved "Bool"
     , CharType pos <$  reserved "Char"
     , IntType  pos <$  reserved "Int"
     , ListType pos <$> brackets type_

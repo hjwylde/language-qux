@@ -194,7 +194,8 @@ instance Pretty (Expr a) where
     pPrint = pPrint . simp
 
 -- | A type.
-data Type a = BoolType a
+data Type a = AnyType a
+            | BoolType a
             | CharType a
             | IntType a
             | ListType a (Type a) -- ^ A list type with an inner type.
@@ -202,6 +203,7 @@ data Type a = BoolType a
     deriving (Functor, Show)
 
 instance Annotated Type where
+    ann (AnyType a)     = a
     ann (BoolType a)    = a
     ann (CharType a)    = a
     ann (IntType a)     = a
@@ -212,6 +214,7 @@ instance Eq (Type a) where
     (==) = (==) `on` simp
 
 instance Simplifiable (Type a) S.Type where
+    simp (AnyType _)        = S.AnyType
     simp (BoolType _)       = S.BoolType
     simp (CharType _)       = S.CharType
     simp (IntType _)        = S.IntType

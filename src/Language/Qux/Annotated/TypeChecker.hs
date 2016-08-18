@@ -118,7 +118,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))         = do
 
     return type_
 checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
-    | op `elem` [Len]   = expectExpr_ expr [ListType $ error "internal error: top type not implemented"] >> return type_
+    | op `elem` [Len]   = expectExpr_ expr [ListType AnyType] >> return type_
     | op `elem` [Neg]   = expectExpr expr [type_]
     | otherwise         = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr {}))                = return type_
@@ -136,13 +136,19 @@ expectExpr_ = fmap void . expectExpr
 
 expectType :: Ann.Type SourcePos -> [Type] -> Check Type
 expectType received expects
-    | simp received `elem` expects  = return $ simp received
-    | otherwise                     = do
+    | any (simp received `isSubtype`) expects   = return $ simp received
+    | otherwise                                 = do
         tell [MismatchedType (Ann.ann received) (simp received) expects]
 
         return $ simp received
 
+isSubtype :: Type -> Type -> Bool
+isSubtype _ AnyType                             = True
+isSubtype (ListType first) (ListType second)    = isSubtype first second
+isSubtype first second                          = first == second
+
 attach :: SourcePos -> Type -> Ann.Type SourcePos
+attach pos AnyType          = Ann.AnyType pos
 attach pos BoolType         = Ann.BoolType pos
 attach pos CharType         = Ann.CharType pos
 attach pos IntType          = Ann.IntType  pos
