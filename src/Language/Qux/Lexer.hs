@@ -86,19 +86,19 @@ quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments id
             caseSensitive   = True
 
 keywords :: [String]
-keywords = [
-    "_",
-    "external", "import", "module", "type",
-    "else", "if", "return", "while",
-    "false", "nil", "true",
-    "Bool", "Int", "Nil"
+keywords =
+    [ "_"
+    , "external", "import", "module", "type"
+    , "else", "if", "return", "while"
+    , "false", "nil", "true"
+    , "Bool", "Int", "Nil"
     ]
 
 operators :: [String]
-operators = [
-    "!!", "|",
-    "*", "/", "%",
-    "+", "-",
-    "<", "<=", ">", ">=",
-    "==", "!="
+operators =
+    [ "!!", "|"
+    , "*", "/", "%"
+    , "+", "-"
+    , "<", "<=", ">", ">="
+    , "==", "!="
     ]

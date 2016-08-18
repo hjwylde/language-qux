@@ -21,34 +21,34 @@ import Data.Map as Map
 
 import LLVM.General.AST
 
-data Builder = Builder {
-    currentBlock    :: Name,
-    blocks          :: Map Name BlockBuilder,
-    counter         :: Word
+data Builder = Builder
+    { currentBlock  :: Name
+    , blocks        :: Map Name BlockBuilder
+    , counter       :: Word
     }
     deriving (Eq, Show)
 
 initialBuilder :: Builder
-initialBuilder = Builder {
-    currentBlock    = name',
-    blocks          = Map.singleton name' defaultBlockBuilder { name = name' },
-    counter         = 1
+initialBuilder = Builder
+    { currentBlock  = name'
+    , blocks        = Map.singleton name' defaultBlockBuilder { name = name' }
+    , counter       = 1
     }
     where
         name' = Name ".0"
 
-data BlockBuilder = BlockBuilder {
-    name    :: Name,
-    stack   :: [Named Instruction],
-    term    :: Maybe (Named Terminator)
+data BlockBuilder = BlockBuilder
+    { name  :: Name
+    , stack :: [Named Instruction]
+    , term  :: Maybe (Named Terminator)
     }
     deriving (Eq, Show)
 
 defaultBlockBuilder :: BlockBuilder
-defaultBlockBuilder = BlockBuilder {
-    name    = error "no block name set",
-    stack   = [],
-    term    = Nothing
+defaultBlockBuilder = BlockBuilder
+    { name  = error "no block name set"
+    , stack = []
+    , term  = Nothing
     }
 
 getBlock :: Monad m => MonadState Builder m => m Name

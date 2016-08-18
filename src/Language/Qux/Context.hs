@@ -28,43 +28,50 @@ import qualified Data.Map        as Map
 import Language.Qux.Syntax
 
 -- | Global context that holds function definition types.
-data Context = Context {
-    module_   :: [Id],                    -- ^ The current module identifier.
-    imports   :: [[Id]],                  -- ^ The imports required by the module.
-    functions :: Map [Id] [(Type, Id)],   -- ^ A map of qualified identifiers to function types
+data Context = Context
+    { module_   :: [Id]                     -- ^ The current module identifier.
+    , imports   :: [[Id]]                   -- ^ The imports required by the module.
+    , functions :: Map [Id] [(Type, Id)]    -- ^ A map of qualified identifiers to function types
                                             --   (including parameter names).
-    types     :: [[Id]]                   -- ^ A list of qualified types.
+    , types     :: [[Id]]                   -- ^ A list of qualified types.
     }
     deriving (Eq, Show)
 
 -- | An empty context.
 emptyContext :: Context
-emptyContext = Context { module_ = [], imports = [], functions = Map.empty, types = [] }
+emptyContext = Context
+    { module_   = []
+    , imports   = []
+    , functions = Map.empty
+    , types     = []
+    }
 
 -- | Returns a base context for the given programs.
 --   The base context populates @functions@ but not @module_@.
 baseContext :: [Program] -> Context
-baseContext programs = Context {
-    module_     = [],
-    imports     = [],
-    functions   = Map.fromList [(module_ ++ [name], type_) |
-        (Program module_ decls) <- programs,
-        (FunctionDecl _ name type_ _) <- decls
-        ],
-    types       = [module_ ++ [name] |
-        (Program module_ decls) <- programs,
-        (TypeDecl _ name) <- decls
+baseContext programs = Context
+    { module_   = []
+    , imports   = []
+    , functions = Map.fromList
+        [ (module_ ++ [name], type_)
+        | (Program module_ decls) <- programs
+        , (FunctionDecl _ name type_ _) <- decls
+        ]
+    , types     =
+        [ module_ ++ [name]
+        | (Program module_ decls) <- programs
+        , (TypeDecl _ name) <- decls
         ]
     }
 
 -- | Narrows down the given context and makes it specific to the given program.
 --   This method removes any function references that aren't imported by the program.
 narrowContext :: Context -> Program -> Context
-narrowContext context (Program module_' decls) = context {
-    module_     = module_',
-    imports     = imports',
-    functions   = Map.filterWithKey (\id _ -> init id `elem` module_':imports') (functions context),
-    types       = filter (\id -> init id `elem` module_':imports') (types context)
+narrowContext context (Program module_' decls) = context
+    { module_   = module_'
+    , imports   = imports'
+    , functions = Map.filterWithKey (\id _ -> init id `elem` module_':imports') (functions context)
+    , types     = filter (\id -> init id `elem` module_':imports') (types context)
     }
     where
         imports' = nubOrd [id | (ImportDecl id) <- decls]

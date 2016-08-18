@@ -15,6 +15,7 @@
 *Minor*
 
 * Added in exceptions from the name and type resolvers. ([#13](https://github.com/hjwylde/language-qux/issues/13), [#19](https://github.com/hjwylde/language-qux/issues/19))
+* Implemented compilation of nils to LLVM. ([#12](https://github.com/hjwylde/language-qux/issues/12))
 
 ### v0.2.0.0
 

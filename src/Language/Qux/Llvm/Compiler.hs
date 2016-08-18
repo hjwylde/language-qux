@@ -31,10 +31,10 @@ import Language.Qux.Syntax       as Qux
 
 import LLVM.General.AST                   as Llvm
 import LLVM.General.AST.CallingConvention
-import LLVM.General.AST.Constant          hiding (exact, nsw, nuw, operand0, operand1)
+import LLVM.General.AST.Constant          as Constant hiding (exact, nsw, nuw, operand0, operand1)
 import LLVM.General.AST.Global            as Global
 import LLVM.General.AST.IntegerPredicate
-import LLVM.General.AST.Type
+import LLVM.General.AST.Type                as Type
 
 import Prelude hiding (EQ)
 
@@ -43,34 +43,44 @@ import Prelude hiding (EQ)
 --   Any exceptions to this will be clearly noted.
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
-    importedFunctions' <- map (\(id, type_) -> GlobalDefinition functionDefaults {
-        Global.name         = Name $ mangle id,
-        Global.returnType   = compileType $ fst (last type_),
-        Global.parameters   = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+    importedFunctions' <- map (\(id, type_) -> GlobalDefinition functionDefaults
+        { Global.name       = Name $ mangle id
+        , Global.returnType = compileType $ fst (last type_)
+        , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
         }) . Map.toList <$> asks importedFunctions
 
-    let externalFunctions = [GlobalDefinition functionDefaults {
-        Global.name         = Name $ mangle (module_ ++ [name]),
-        Global.returnType   = compileType $ fst (last type_),
-        Global.parameters   = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
-        } | (FunctionDecl attrs name type_ _) <- decls, External `elem` attrs]
+    let externalFunctions =
+            [ GlobalDefinition functionDefaults
+                { Global.name       = Name $ mangle (module_ ++ [name])
+                , Global.returnType = compileType $ fst (last type_)
+                , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+                }
+            | (FunctionDecl attrs name type_ _) <- decls, External `elem` attrs
+            ]
 
-    localFunctions <- mapM compileDecl [decl |
-        decl@(FunctionDecl attrs _ _ _) <- decls,
-        External `notElem` attrs
+    localFunctions <- mapM compileDecl
+        [ decl
+        | decl@(FunctionDecl attrs _ _ _) <- decls
+        , External `notElem` attrs
         ]
 
     importedTypes' <- map (\id -> TypeDefinition (Name $ mangle id) Nothing) <$> asks importedTypes
 
-    let externalTypes = [TypeDefinition (Name $ mangle (module_ ++ [name])) Nothing |
-            (TypeDecl attrs name) <- decls,
-            External `elem` attrs
+    let externalTypes =
+            [ TypeDefinition (Name $ mangle (module_ ++ [name])) Nothing
+            | (TypeDecl attrs name) <- decls
+            , External `elem` attrs
             ]
 
-    return $ defaultModule {
-        moduleName          = qualify module_,
-        moduleDefinitions   = importedFunctions' ++ externalFunctions ++ localFunctions ++
-            importedTypes' ++ externalTypes
+    return $ defaultModule
+        { moduleName        = qualify module_
+        , moduleDefinitions = concat
+            [ importedFunctions'
+            , externalFunctions
+            , localFunctions
+            , importedTypes'
+            , externalTypes
+            ]
         }
 
 compileDecl :: Decl -> Reader Context Definition
@@ -78,11 +88,11 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
     module_'        <- asks module_
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
-    return $ GlobalDefinition functionDefaults {
-        Global.name         = Name $ mangle (module_' ++ [name]),
-        Global.returnType   = compileType $ fst (last type_),
-        Global.parameters   = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False),
-        basicBlocks     = map (\b -> BasicBlock (Builder.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
+    return $ GlobalDefinition functionDefaults
+        { Global.name       = Name $ mangle (module_' ++ [name])
+        , Global.returnType = compileType $ fst (last type_)
+        , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+        , basicBlocks       = map (\b -> BasicBlock (Builder.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
@@ -183,14 +193,14 @@ compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
 
     n <- freeName
 
-    append $ Name n := Call {
-        tailCallKind            = Nothing,
-        Llvm.callingConvention  = C,
-        Llvm.returnAttributes   = [],
-        function                = Right $ ConstantOperand $ GlobalReference (compileType type_) (Name $ mangle id),
-        arguments               = [(op, []) | op <- operands],
-        Llvm.functionAttributes = [],
-        metadata                = []
+    append $ Name n := Call
+        { tailCallKind              = Nothing
+        , Llvm.callingConvention    = C
+        , Llvm.returnAttributes     = []
+        , function                  = Right $ ConstantOperand $ GlobalReference (compileType type_) (Name $ mangle id)
+        , arguments                 = [(op, []) | op <- operands]
+        , Llvm.functionAttributes   = []
+        , metadata                  = []
         }
 
     return $ LocalReference (compileType type_) (Name n)
@@ -203,9 +213,9 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
 
     case op of
         Len -> undefined
-        Neg -> append $ Name n := Llvm.Mul {
-            nsw = False, nuw = False, metadata = [],
-            operand0 = operand, operand1 = ConstantOperand Int { integerBits = 32, integerValue = -1 }
+        Neg -> append $ Name n := Llvm.Mul
+            { nsw = False, nuw = False, metadata = []
+            , operand0 = operand, operand1 = ConstantOperand Int { integerBits = 32, integerValue = -1 }
             }
 
     return $ LocalReference (compileType type_) (Name n)
@@ -214,24 +224,31 @@ compileExpr (TypedExpr type_ (VariableExpr name))           = return $ LocalRefe
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
 compileValue :: Value -> Constant
-compileValue (BoolValue bool)   = Int {
-    integerBits = 1,
-    integerValue = toInteger (fromEnum bool)
+compileValue (BoolValue bool)   = Int
+    { integerBits   = 1
+    , integerValue  = toInteger (fromEnum bool)
     }
-compileValue (CharValue char)   = Int {
-    integerBits = 8,
-    integerValue = toInteger $ digitToInt char
+compileValue (CharValue char)   = Int
+    { integerBits   = 8
+    , integerValue  = toInteger $ digitToInt char
     }
-compileValue (IntValue int)     = Int {
-    integerBits = 32,
-    integerValue = toInteger int
+compileValue (IntValue int)     = Int
+    { integerBits   = 32
+    , integerValue  = toInteger int
     }
 compileValue (ListValue _)      = error "internal error: cannot compile a list as a constant"
-compileValue NilValue           = error "internal error: compilation for nil not implemented"
+compileValue NilValue           = Struct
+    { structName        = Nothing
+    , Constant.isPacked = True
+    , memberValues      = []
+    }
 
 compileType :: Qux.Type -> Llvm.Type
 compileType BoolType        = i1
 compileType CharType        = i8
 compileType IntType         = i32
 compileType (ListType _)    = NamedTypeReference $ Name (mangle ["qux", "lang", "list", "List"])
-compileType NilType         = error "internal error: compilation for nil types not implemented"
+compileType NilType         = StructureType
+    { Type.isPacked = True
+    , elementTypes  = []
+    }
