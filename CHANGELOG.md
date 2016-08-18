@@ -9,6 +9,7 @@
 * Added in `external` function attribute. ([#16](https://github.com/hjwylde/language-qux/issues/16))
 * Added in `Char` type and character literals. ([#10](https://github.com/hjwylde/language-qux/issues/10))
 * Added in external type declarations. ([#27](https://github.com/hjwylde/language-qux/issues/27))
+* Updated to use LLVM 3.5. ([#7](https://github.com/hjwylde/language-qux/issues/7))
 
 *Minor*
 

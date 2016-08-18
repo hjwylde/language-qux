@@ -5,4 +5,4 @@ ghc-options:
 packages:
 - '.'
 extra-deps:
-- llvm-general-pure-3.4.5.4
+- llvm-general-pure-3.5.1.0
