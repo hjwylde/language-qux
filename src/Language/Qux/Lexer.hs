@@ -91,7 +91,7 @@ keywords =
     , "external", "import", "module", "type"
     , "else", "if", "return", "while"
     , "false", "nil", "true"
-    , "Bool", "Int", "Nil"
+    , "Any", "Bool", "Int", "Nil"
     ]
 
 operators :: [String]

@@ -169,7 +169,8 @@ instance Pretty Value where
     pPrint NilValue             = text "nil"
 
 -- | A type.
-data Type   = BoolType
+data Type   = AnyType
+            | BoolType
             | CharType
             | IntType
             | ListType Type -- ^ A list type with an inner type.
@@ -177,6 +178,7 @@ data Type   = BoolType
     deriving (Eq, Show)
 
 instance Pretty Type where
+    pPrint AnyType          = text "Any"
     pPrint BoolType         = text "Bool"
     pPrint CharType         = text "Char"
     pPrint IntType          = text "Int"
