@@ -144,41 +144,35 @@ application :: Parser (Expr SourcePos)
 application = ApplicationExpr <$> getPosition <*> id_ <*> many (sameOrIndented >> term)
 
 term :: Parser (Expr SourcePos)
-term = getPosition >>= \pos -> choice [
-    parens expr,
-    ApplicationExpr pos <$> id_ <*> return [],
-    ListExpr  pos       <$> brackets (expr `sepEndBy` comma),
-    UnaryExpr pos Len   <$> pipes expr,
-    ValueExpr pos       <$> value
+term = getPosition >>= \pos -> choice
+    [ parens expr
+    , ApplicationExpr pos <$> id_ <*> return []
+    , ListExpr  pos       <$> brackets (expr `sepEndBy` comma)
+    , UnaryExpr pos Len   <$> pipes expr
+    , ValueExpr pos       <$> value
     ]
 
 table :: OperatorTable String () (State SourcePos) (Expr SourcePos)
-table = [
-    [
-        Prefix (unaryExpr Neg "-")
-    ],
-    [
-        Infix (binaryExpr Acc "!!") AssocLeft
-    ],
-    [
-        Infix (binaryExpr Mul "*") AssocLeft,
-        Infix (binaryExpr Div "/") AssocLeft,
-        Infix (binaryExpr Mod "%") AssocLeft
-    ],
-    [
-        Infix (binaryExpr Add "+") AssocLeft,
-        Infix (binaryExpr Sub "-") AssocLeft
-    ],
-    [
-        Infix (binaryExpr Lte "<=") AssocLeft,
-        Infix (binaryExpr Lt "<") AssocLeft,
-        Infix (binaryExpr Gte ">=") AssocLeft,
-        Infix (binaryExpr Gt ">") AssocLeft
-    ],
-    [
-        Infix (binaryExpr Eq "==") AssocLeft,
-        Infix (binaryExpr Neq "!=") AssocLeft
-    ]
+table =
+    [ [ Prefix (unaryExpr Neg "-")
+      ],
+      [ Infix (binaryExpr Acc "!!") AssocLeft
+      ],
+      [ Infix (binaryExpr Mul "*") AssocLeft
+      , Infix (binaryExpr Div "/") AssocLeft
+      , Infix (binaryExpr Mod "%") AssocLeft
+      ],
+      [ Infix (binaryExpr Add "+") AssocLeft
+      , Infix (binaryExpr Sub "-") AssocLeft
+      ],
+      [ Infix (binaryExpr Lte "<=") AssocLeft
+      , Infix (binaryExpr Lt "<") AssocLeft
+      , Infix (binaryExpr Gte ">=") AssocLeft
+      , Infix (binaryExpr Gt ">") AssocLeft
+      ],
+      [ Infix (binaryExpr Eq "==") AssocLeft
+      , Infix (binaryExpr Neq "!=") AssocLeft
+      ]
     ]
 
 binaryExpr :: BinaryOp -> String -> Parser (Expr SourcePos -> Expr SourcePos -> Expr SourcePos)
@@ -190,21 +184,21 @@ unaryExpr op sym = getPosition >>= \pos -> UnaryExpr pos op <$ operator sym
 -- |    'Value' parser.
 --      A value doesn't have a source position attached as this can be retrieved from a 'ValueExpr'.
 value :: Parser Value
-value = choice [
-    BoolValue False <$  reserved "false",
-    BoolValue True  <$  reserved "true",
-    CharValue       <$> charLiteral,
-    IntValue        <$> natural,
-    ListValue       <$> brackets (value `sepEndBy` comma),
-    NilValue        <$  reserved "nil"
+value = choice
+    [ BoolValue False <$  reserved "false"
+    , BoolValue True  <$  reserved "true"
+    , CharValue       <$> charLiteral
+    , IntValue        <$> natural
+    , ListValue       <$> brackets (value `sepEndBy` comma)
+    , NilValue        <$  reserved "nil"
     ] <?> "value"
 
 -- | 'Type' parser.
 type_ :: Parser (Type SourcePos)
-type_ = getPosition >>= \pos -> choice [
-    BoolType pos <$  reserved "Bool",
-    CharType pos <$  reserved "Char",
-    IntType  pos <$  reserved "Int",
-    ListType pos <$> brackets type_,
-    NilType  pos <$  reserved "Nil"
+type_ = getPosition >>= \pos -> choice
+    [ BoolType pos <$  reserved "Bool"
+    , CharType pos <$  reserved "Char"
+    , IntType  pos <$  reserved "Int"
+    , ListType pos <$> brackets type_
+    , NilType  pos <$  reserved "Nil"
     ] <?> "type"

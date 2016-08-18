@@ -61,13 +61,13 @@ instance CompilerException TypeException where
     message (TypeException _ m)                         = m
     message (DuplicateFunctionName _ name)              = "duplicate function name \"" ++ name ++ "\""
     message (DuplicateParameterName _ name)             = "duplicate parameter name \"" ++ name ++ "\""
-    message (InvalidFunctionCall _ received expected)   = concat [
-        "invalid arguments count ", show received,
-        "\nexpecting ", show expected
+    message (InvalidFunctionCall _ received expected)   = concat
+        [ "invalid arguments count ", show received
+        , "\nexpecting ", show expected
         ]
-    message (MismatchedType _ received expects)         = concat [
-        "unexpected type \"", pShow received, "\"",
-        "\nexpecting ", sentence "or" (map pShow expects)
+    message (MismatchedType _ received expects)         = concat
+        [ "unexpected type \"", pShow received, "\""
+        , "\nexpecting ", sentence "or" (map pShow expects)
         ]
 
 instance Exception TypeException
@@ -96,9 +96,9 @@ instance CompilerException ResolveException where
     pos (UndefinedFunctionCall p _)     = p
 
     message (ResolveException _ m)                      = m
-    message (AmbiguousFunctionCall _ name exporters)    = concat [
-        "ambiguous call to function \"", name, "\"",
-        "\nexported from ", sentence "and" (map qualify exporters)
+    message (AmbiguousFunctionCall _ name exporters)    = concat
+        [ "ambiguous call to function \"", name, "\""
+        , "\nexported from ", sentence "and" (map qualify exporters)
         ]
     message (DuplicateAttribute _ name)                 = "duplicate attribute \"" ++ name ++ "\""
     message (DuplicateImport _ id)                      = "duplicate import \"" ++ qualify id ++ "\""

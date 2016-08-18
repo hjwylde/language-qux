@@ -50,9 +50,9 @@ data Decl   = FunctionDecl [Attribute] Id [(Type, Id)] [Stmt]   -- ^ A name, lis
 
 instance Pretty Decl where
     pPrint (FunctionDecl attrs name type_ [])       = declarationDoc attrs name type_
-    pPrint (FunctionDecl attrs name type_ stmts)    = vcat [
-        declarationDoc attrs name type_ <> colon,
-        nest 4 $ block stmts
+    pPrint (FunctionDecl attrs name type_ stmts)    = vcat
+        [ declarationDoc attrs name type_ <> colon
+        , nest 4 $ block stmts
         ]
     pPrint (ImportDecl id)                          = text "import" <+> hcat (punctuate (char '.') (map text id))
     pPrint (TypeDecl attrs name)                    = text "type" <+> hsep (map pPrint attrs) <+> text name
@@ -78,16 +78,16 @@ data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false b
     deriving (Eq, Show)
 
 instance Pretty Stmt where
-    pPrint (IfStmt condition trueStmts falseStmts)  = vcat [
-        text "if" <+> pPrint condition <> colon,
-        nest 4 $ block trueStmts,
-        if null falseStmts then empty else text "else:",
-        nest 4 $ block falseStmts
+    pPrint (IfStmt condition trueStmts falseStmts)  = vcat
+        [ text "if" <+> pPrint condition <> colon
+        , nest 4 $ block trueStmts
+        , if null falseStmts then empty else text "else:"
+        , nest 4 $ block falseStmts
         ]
     pPrint (ReturnStmt expr)                        = text "return" <+> pPrint expr
-    pPrint (WhileStmt condition stmts)              = vcat [
-        text "while" <+> pPrint condition <> colon,
-        nest 4 $ block stmts
+    pPrint (WhileStmt condition stmts)              = vcat
+        [ text "while" <+> pPrint condition <> colon
+        , nest 4 $ block stmts
         ]
 
 -- | A complex expression.
