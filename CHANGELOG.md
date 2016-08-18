@@ -10,6 +10,7 @@
 * Added in `Char` type and character literals. ([#10](https://github.com/hjwylde/language-qux/issues/10))
 * Added in external type declarations. ([#27](https://github.com/hjwylde/language-qux/issues/27))
 * Updated to use LLVM 3.5. ([#7](https://github.com/hjwylde/language-qux/issues/7))
+* Fixed external function declarations from requiring parameter names. ([#41](https://github.com/hjwylde/language-qux/issues/41))
 
 *Minor*
 

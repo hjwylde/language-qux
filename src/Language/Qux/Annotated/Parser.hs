@@ -73,14 +73,27 @@ decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
 
             attrs <- many attribute
 
-            choice [functionDecl pos attrs, typeDecl pos attrs] <?> "function or type declaration"
+            choice
+                [ if External undefined `elem` attrs
+                  then externalFunctionDecl pos attrs
+                  else functionDecl pos attrs
+                , typeDecl pos attrs
+                ] <?> "function or type declaration"
+
+        externalFunctionDecl pos attrs = do
+            name <- id_
+            symbol_ "::"
+            parameterTypes <- withPos $ try (fmap (,) type_ <+/> return (Id pos "_")) `endBy` rightArrow
+            returnType <- type_
+
+            return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) []
 
         functionDecl pos attrs = do
             name <- id_
             symbol_ "::"
             parameterTypes <- withPos $ try (fmap (,) type_ <+/> id_) `endBy` rightArrow
             returnType <- type_
-            stmts <- if External undefined `elem` attrs then return [] else colon >> indented >> block stmt
+            stmts <- colon >> indented >> block stmt
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
 
