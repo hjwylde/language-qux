@@ -111,8 +111,6 @@ instance Exception ResolveException
 instance Show ResolveException where
     show e = show (pos e) ++ ":\n" ++ message e
 
--- Helper methods
-
 sentence :: String -> [String] -> String
 sentence _ [x]  = x
 sentence sep xs = unwords [intercalate ", " (map show $ init xs), sep, show $ last xs]

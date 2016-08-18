@@ -195,7 +195,5 @@ mangle = intercalate "_"
 pShow :: Pretty a => a -> String
 pShow = renderStyle (style { mode = OneLineMode }) . pPrint
 
--- Helper methods
-
 block :: [Stmt] -> Doc
 block = vcat . map pPrint
