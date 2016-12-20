@@ -36,7 +36,10 @@ class CompilerException e where
     -- | Creates a human understandable message from the exception.
     message :: e -> String
 
-    -- TODO (hjw): add a posMessage and remove Show instances
+    -- | Creates a human understandable message from the exception that includes the position
+    --   information.
+    fullMessage :: e -> String
+    fullMessage e = show (pos e) ++ ":\n" ++ message e
 
 -- | An exception that occurs during type checking. See "Language.Qux.Annotated.TypeChecker".
 data TypeException  = TypeException SourcePos String        -- ^ A generic type exception with a
@@ -73,7 +76,7 @@ instance CompilerException TypeException where
 instance Exception TypeException
 
 instance Show TypeException where
-    show e = show (pos e) ++ ":\n" ++ message e
+    show = fullMessage
 
 -- | An exception that occurs during name resolution. See "Language.Qux.Annotated.NameResolver".
 data ResolveException   = ResolveException SourcePos String         -- ^ A generic type exception with a
@@ -109,7 +112,7 @@ instance CompilerException ResolveException where
 instance Exception ResolveException
 
 instance Show ResolveException where
-    show e = show (pos e) ++ ":\n" ++ message e
+    show = fullMessage
 
 sentence :: String -> [String] -> String
 sentence _ [x]  = x
