@@ -18,6 +18,7 @@ module Language.Qux.Llvm.Compiler (
     compileProgram,
 ) where
 
+import Control.Lens         hiding (Context)
 import Control.Monad.Reader
 import Control.Monad.State
 
@@ -34,7 +35,7 @@ import LLVM.General.AST.CallingConvention
 import LLVM.General.AST.Constant          as Constant hiding (exact, nsw, nuw, operand0, operand1)
 import LLVM.General.AST.Global            as Global
 import LLVM.General.AST.IntegerPredicate
-import LLVM.General.AST.Type                as Type
+import LLVM.General.AST.Type              as Type
 
 import Prelude hiding (EQ)
 
@@ -43,11 +44,11 @@ import Prelude hiding (EQ)
 --   Any exceptions to this will be clearly noted.
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
-    importedFunctions' <- map (\(id, type_) -> GlobalDefinition functionDefaults
+    importedFunctions' <- views (imported . functions) (map (\(id, type_) -> GlobalDefinition functionDefaults
         { Global.name       = Name $ mangle id
         , Global.returnType = compileType $ fst (last type_)
         , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
-        }) . Map.toList <$> asks importedFunctions
+        }) . Map.toList)
 
     let externalFunctions =
             [ GlobalDefinition functionDefaults
@@ -64,7 +65,7 @@ compileProgram (Program module_ decls) = do
         , External `notElem` attrs
         ]
 
-    importedTypes' <- map (\id -> TypeDefinition (Name $ mangle id) Nothing) <$> asks importedTypes
+    importedTypes' <- views (imported . types) (map $ \id -> TypeDefinition (Name $ mangle id) Nothing)
 
     let externalTypes =
             [ TypeDefinition (Name $ mangle (module_ ++ [name])) Nothing
@@ -85,7 +86,7 @@ compileProgram (Program module_ decls) = do
 
 compileDecl :: Decl -> Reader Context Definition
 compileDecl (FunctionDecl _ name type_ stmts)   = do
-    module_'        <- asks module_
+    module_'        <- view module_
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
     return $ GlobalDefinition functionDefaults

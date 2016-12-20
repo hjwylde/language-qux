@@ -28,6 +28,7 @@ module Language.Qux.Annotated.TypeResolver (
     resolveProgram, resolveDecl, resolveStmt, resolveExpr, resolveValue, extractType,
 ) where
 
+import Control.Lens         hiding (Context)
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
@@ -111,7 +112,7 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs) = do
             Neq -> BoolType
 
     return $ Ann.TypedExpr pos type_ (Ann.BinaryExpr pos op lhs' rhs')
-resolveExpr (Ann.CallExpr pos id arguments) = asks (Map.lookup (map simp id) . functions) >>= maybe
+resolveExpr (Ann.CallExpr pos id arguments) = views functions (Map.lookup $ map simp id) >>= maybe
     (error "internal error: undefined function call has no type (try applying name resolution)")
     (\type_ -> do
         arguments_ <- mapM resolveExpr arguments

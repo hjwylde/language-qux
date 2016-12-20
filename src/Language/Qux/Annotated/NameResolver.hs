@@ -28,6 +28,7 @@ module Language.Qux.Annotated.NameResolver (
     resolveProgram, resolveDecl, resolveStmt, resolveExpr,
 ) where
 
+import Control.Lens         hiding (Context)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
@@ -54,7 +55,7 @@ runResolve resolve context = runWriter $ runReaderT resolve context
 
 functionFromName :: Ann.Id SourcePos -> Resolve [Id]
 functionFromName (Ann.Id pos name) = do
-    ids <- asks $ Map.keys . flip functionsFromName name
+    ids <- views (withName name . functions) Map.keys
 
     when (null ids)         $ tell [UndefinedFunctionCall pos name]
     when (length ids > 1)   $ tell [AmbiguousFunctionCall pos name (map init ids)]
@@ -69,7 +70,7 @@ type Locals = [Id]
 resolveProgram :: Ann.Program SourcePos -> Resolve (Ann.Program SourcePos)
 resolveProgram (Ann.Program pos module_ decls) = do
     let imports     =  [import_ | import_@(Ann.ImportDecl {}) <- decls]
-    foundImports    <- asks $ nub . map init . Map.keys . importedFunctions
+    foundImports    <- views (imported . functions) (nub . map init . Map.keys)
 
     let unfoundImports = filter (\(Ann.ImportDecl _ id) -> map simp id `notElem` foundImports) imports
     unless (null unfoundImports) $ tell [ImportNotFound pos (map simp id) | (Ann.ImportDecl pos id) <- unfoundImports]

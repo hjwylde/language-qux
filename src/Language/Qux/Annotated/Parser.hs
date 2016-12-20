@@ -181,8 +181,8 @@ binaryExpr op sym = getPosition >>= \pos -> BinaryExpr pos op <$ operator sym
 unaryExpr :: UnaryOp -> String -> Parser (Expr SourcePos -> Expr SourcePos)
 unaryExpr op sym = getPosition >>= \pos -> UnaryExpr pos op <$ operator sym
 
--- |    'Value' parser.
---      A value doesn't have a source position attached as this can be retrieved from a 'ValueExpr'.
+-- | 'Value' parser.
+--   A value doesn't have a source position attached as this can be retrieved from a 'ValueExpr'.
 value :: Parser Value
 value = choice
     [ BoolValue False <$  reserved "false"

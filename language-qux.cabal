@@ -49,12 +49,14 @@ library
         FlexibleContexts,
         FlexibleInstances,
         FunctionalDependencies,
-        MultiParamTypeClasses
+        MultiParamTypeClasses,
+        TemplateHaskell
     build-depends:
         base == 4.8.*,
         containers == 0.5.*,
         extra == 1.4.*,
         indents >= 0.3.3 && < 0.4,
+        lens,
         llvm-general-pure == 3.5.*,
         mtl == 2.2.*,
         parsec == 3.1.*,

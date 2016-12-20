@@ -26,6 +26,7 @@ module Language.Qux.Annotated.TypeChecker (
     checkProgram, checkDecl, checkStmt, checkExpr,
 ) where
 
+import Control.Lens         hiding (Context)
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
@@ -101,7 +102,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.BinaryExpr _ op lhs rhs))
     | op `elem` [Lt, Lte, Gt, Gte]          = expectExpr_ lhs [IntType] >> expectExpr_ rhs [IntType] >> return type_
     | op `elem` [Eq, Neq]                   = checkExpr lhs >>= expectExpr rhs . (:[]) >> return type_
     | otherwise                             = error $ "internal error: type checking for \"" ++ show op ++ "\" not implemented"
-checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = asks (Map.lookup (map simp id) . functions) >>= maybe
+checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = views functions (Map.lookup $ map simp id) >>= maybe
     (error "internal error: undefined function call has no type (try applying name resolution)")
     (\types -> do
         let expected = map fst (init types)
