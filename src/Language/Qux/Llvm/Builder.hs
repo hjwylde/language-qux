@@ -12,9 +12,11 @@ Build utilities for the LLVM compiler, see "Compiler".
 {-# OPTIONS_HADDOCK hide, prune #-}
 
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Language.Qux.Llvm.Builder where
 
+import Control.Lens
 import Control.Monad.State
 
 import Data.Map as Map
@@ -22,58 +24,65 @@ import Data.Map as Map
 import LLVM.General.AST
 
 data Builder = Builder
-    { currentBlock  :: Name
-    , blocks        :: Map Name BlockBuilder
-    , counter       :: Word
+    { _currentBlockName :: Name
+    , _blocks           :: Map Name BlockBuilder
+    , _counter          :: Word
     }
     deriving (Eq, Show)
 
+data BlockBuilder = BlockBuilder
+    { _name     :: Name
+    , _stack    :: [Named Instruction]
+    , _term     :: Maybe (Named Terminator)
+    }
+    deriving (Eq, Show)
+
+makeLenses ''Builder
+
+makeLenses ''BlockBuilder
+
 initialBuilder :: Builder
 initialBuilder = Builder
-    { currentBlock  = name'
-    , blocks        = Map.singleton name' defaultBlockBuilder { name = name' }
-    , counter       = 1
+    { _currentBlockName = name'
+    , _blocks           = Map.singleton name' (newBlockBuilder name')
+    , _counter          = 1
     }
     where
         name' = Name ".0"
 
-data BlockBuilder = BlockBuilder
-    { name  :: Name
-    , stack :: [Named Instruction]
-    , term  :: Maybe (Named Terminator)
-    }
-    deriving (Eq, Show)
-
 defaultBlockBuilder :: BlockBuilder
 defaultBlockBuilder = BlockBuilder
-    { name  = error "no block name set"
-    , stack = []
-    , term  = Nothing
+    { _name     = error "no block name set"
+    , _stack    = []
+    , _term     = Nothing
     }
 
-getBlock :: Monad m => MonadState Builder m => m Name
-getBlock = gets currentBlock
+newBlockBuilder :: Name -> BlockBuilder
+newBlockBuilder name' = defaultBlockBuilder & name .~ name'
 
-setBlock :: Monad m => MonadState Builder m => Name -> m ()
-setBlock name = modify $ \s -> s { currentBlock = name }
+getBlock :: MonadState Builder m => m Name
+getBlock = use currentBlockName
 
-addBlock :: Monad m => MonadState Builder m => Name -> m ()
-addBlock name' = modify $ \s -> s { blocks = Map.insert name' defaultBlockBuilder { name = name' } (blocks s) }
+setBlock :: MonadState Builder m => Name -> m ()
+setBlock name = modify $ \s -> s & currentBlockName .~ name
 
-modifyBlock :: Monad m => MonadState Builder m => (BlockBuilder -> BlockBuilder) -> m ()
-modifyBlock f = current >>= \c -> modify (\s -> s { blocks = Map.insert (name c) (f c) (blocks s) })
+addBlock :: MonadState Builder m => Name -> m ()
+addBlock name' = modify $ \s -> s & blocks %~ Map.insert name' (newBlockBuilder name')
 
-current :: Monad m => MonadState Builder m => m BlockBuilder
-current = getBlock >>= \name -> gets (flip (Map.!) name . blocks)
+modifyBlock :: MonadState Builder m => (BlockBuilder -> BlockBuilder) -> m ()
+modifyBlock f = current >>= \c -> modify (\s -> s & blocks %~ Map.insert (c ^. name) (f c))
 
-append :: Monad m => MonadState Builder m => Named Instruction -> m ()
-append instr = modifyBlock $ \b -> b { stack = stack b ++ [instr] }
+current :: MonadState Builder m => m BlockBuilder
+current = getBlock >>= \name -> uses blocks (flip (Map.!) name)
 
-terminate :: Monad m => MonadState Builder m => Named Terminator -> m ()
-terminate term = modifyBlock $ \b -> b { term = Just term }
+append :: MonadState Builder m => Named Instruction -> m ()
+append instr = modifyBlock $ \b -> b & stack %~ (`snoc` instr)
 
-freeName :: Monad m => MonadState Builder m => m String
-freeName = (("." ++) . show) <$> freeUnName
+terminate :: MonadState Builder m => Named Terminator -> m ()
+terminate term' = modifyBlock $ \b -> b & term .~ Just term'
 
-freeUnName :: Monad m => MonadState Builder m => m Word
-freeUnName = gets counter <* modify (\s -> s { counter = counter s + 1 })
+freeName :: MonadState Builder m => m String
+freeName = (('.':) . show) <$> freeUnName
+
+freeUnName :: MonadState Builder m => m Word
+freeUnName = use counter <* (counter += 1)

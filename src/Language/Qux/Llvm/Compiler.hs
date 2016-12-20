@@ -93,7 +93,7 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
         { Global.name       = Name $ mangle (module_' ++ [name])
         , Global.returnType = compileType $ fst (last type_)
         , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
-        , basicBlocks       = map (\b -> BasicBlock (Builder.name b) (stack b) (fromJust $ term b)) (Map.elems $ blocks blockBuilder)
+        , basicBlocks       = map (\b -> BasicBlock (b ^. Builder.name) (b ^. stack) (fromJust $ b ^. term)) (Map.elems $ blockBuilder ^. blocks)
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
@@ -112,13 +112,13 @@ compileStmt (IfStmt condition trueStmts falseStmts) = do
     mapM_ compileStmt trueStmts
 
     c <- current
-    when (isNothing $ term c) $ terminate (Do Llvm.Br { dest = exitLabel, metadata' = [] })
+    when (isNothing $ c ^. term) $ terminate (Do Llvm.Br { dest = exitLabel, metadata' = [] })
 
     addBlock elseLabel >> setBlock elseLabel
     mapM_ compileStmt falseStmts
 
     c <- current
-    when (isNothing $ term c) $ terminate (Do Llvm.Br { dest = exitLabel, metadata' = [] })
+    when (isNothing $ c ^. term) $ terminate (Do Llvm.Br { dest = exitLabel, metadata' = [] })
 
     addBlock exitLabel >> setBlock exitLabel
     terminate $ Do Llvm.Unreachable { metadata' = [] }
@@ -141,7 +141,7 @@ compileStmt (WhileStmt condition stmts)             = do
     mapM_ compileStmt stmts
 
     c <- current
-    when (isNothing $ term c) $ terminate (Do Llvm.Br { dest = whileLabel, metadata' = [] })
+    when (isNothing $ c ^. term) $ terminate (Do Llvm.Br { dest = whileLabel, metadata' = [] })
 
     addBlock exitLabel >> setBlock exitLabel
     terminate $ Do Llvm.Unreachable { metadata' = [] }
