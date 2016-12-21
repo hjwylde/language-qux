@@ -19,23 +19,21 @@ module Language.Qux.Llvm.Compiler (
 ) where
 
 import Control.Lens         hiding (Context)
-import Control.Monad.Reader
+import Control.Monad.Reader hiding (local)
 import Control.Monad.State
 
-import           Data.Char
 import qualified Data.Map   as Map
 import           Data.Maybe
 
-import Language.Qux.Context
-import Language.Qux.Llvm.Builder as Builder
-import Language.Qux.Syntax       as Qux
+import Language.Qux.Context        hiding (local)
+import Language.Qux.Llvm.Builder   as Builder
+import Language.Qux.Llvm.Generator
+import Language.Qux.Syntax         as Qux
 
-import LLVM.General.AST                   as Llvm
-import LLVM.General.AST.CallingConvention
-import LLVM.General.AST.Constant          as Constant hiding (exact, nsw, nuw, operand0, operand1)
-import LLVM.General.AST.Global            as Global
+import LLVM.General.AST                  as Llvm
+import LLVM.General.AST.Constant         as Constant hiding (exact, nsw, nuw, operand0, operand1)
+import LLVM.General.AST.Global           as Global
 import LLVM.General.AST.IntegerPredicate
-import LLVM.General.AST.Type              as Type
 
 import Prelude hiding (EQ)
 
@@ -102,49 +100,16 @@ compileStmt :: Stmt -> StateT Builder (Reader Context) ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do
     operand <- compileExpr condition
 
-    thenLabel <- Name <$> freeName
-    elseLabel <- Name <$> freeName
-    exitLabel <- Name <$> freeName
-
-    terminate $ Do Llvm.CondBr { condition = operand, trueDest = thenLabel, falseDest = elseLabel, metadata' = [] }
-
-    addBlock thenLabel >> setBlock thenLabel
-    mapM_ compileStmt trueStmts
-
-    c <- current
-    when (isNothing $ c ^. term) $ terminate (Do Llvm.Br { dest = exitLabel, metadata' = [] })
-
-    addBlock elseLabel >> setBlock elseLabel
-    mapM_ compileStmt falseStmts
-
-    c <- current
-    when (isNothing $ c ^. term) $ terminate (Do Llvm.Br { dest = exitLabel, metadata' = [] })
-
-    addBlock exitLabel >> setBlock exitLabel
-    terminate $ Do Llvm.Unreachable { metadata' = [] }
+    if_ operand
+        (mapM_ compileStmt trueStmts)
+        (mapM_ compileStmt falseStmts)
 compileStmt (ReturnStmt expr)                       = do
     operand <- compileExpr expr
 
-    terminate $ Do Ret { returnOperand = Just operand, metadata' = [] }
+    ret operand
 compileStmt (WhileStmt condition stmts)             = do
-    whileLabel  <- Name <$> freeName
-    loopLabel   <- Name <$> freeName
-    exitLabel   <- Name <$> freeName
-
-    terminate $ Do Llvm.Br { dest = whileLabel, metadata' = [] }
-
-    addBlock whileLabel >> setBlock whileLabel
-    operand <- compileExpr condition
-    terminate $ Do Llvm.CondBr { condition = operand, trueDest = loopLabel, falseDest = exitLabel, metadata' = [] }
-
-    addBlock loopLabel >> setBlock loopLabel
-    mapM_ compileStmt stmts
-
-    c <- current
-    when (isNothing $ c ^. term) $ terminate (Do Llvm.Br { dest = whileLabel, metadata' = [] })
-
-    addBlock exitLabel >> setBlock exitLabel
-    terminate $ Do Llvm.Unreachable { metadata' = [] }
+    while (compileExpr condition)
+        (mapM_ compileStmt stmts)
 
 compileExpr :: Expr -> StateT Builder (Reader Context) Operand
 compileExpr (TypedExpr type_ (BinaryExpr Qux.Acc lhs rhs))  = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "acc"] [lhs, rhs]))
@@ -156,55 +121,27 @@ compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))       = do
 
     case op of
         Qux.Acc -> undefined
-        Qux.Mul -> do
-            append $ Name n := Llvm.Mul { nsw = False, nuw = False, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Div -> do
-            append $ Name n := Llvm.SDiv { exact = False, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Mod -> do
-            append $ Name n := Llvm.SRem { operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Add -> do
-            append $ Name n := Llvm.Add { nsw = False, nuw = False, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Sub -> do
-            append $ Name n := Llvm.Sub { nsw = False, nuw = False, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Lt  -> do
-            append $ Name n := Llvm.ICmp { Llvm.iPredicate = SLT, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Lte -> do
-            append $ Name n := Llvm.ICmp { Llvm.iPredicate = SLE, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Gt  -> do
-            append $ Name n := Llvm.ICmp { Llvm.iPredicate = SGT, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Gte -> do
-            append $ Name n := Llvm.ICmp { Llvm.iPredicate = SGE, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Eq  -> do
-            append $ Name n := Llvm.ICmp { Llvm.iPredicate = EQ, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
-        Qux.Neq -> do
-            append $ Name n := Llvm.ICmp { Llvm.iPredicate = NE, operand0 = lhsOperand, operand1 = rhsOperand, metadata = [] }
-            return $ LocalReference (compileType type_) (Name n)
+        Qux.Mul -> mul lhsOperand rhsOperand (Name n)
+        Qux.Div -> sdiv lhsOperand rhsOperand (Name n)
+        Qux.Mod -> srem lhsOperand rhsOperand (Name n)
+        Qux.Add -> add lhsOperand rhsOperand (Name n)
+        Qux.Sub -> sub lhsOperand rhsOperand (Name n)
+        Qux.Lt  -> icmp SLT lhsOperand rhsOperand (Name n)
+        Qux.Lte -> icmp SLE lhsOperand rhsOperand (Name n)
+        Qux.Gt  -> icmp SGT lhsOperand rhsOperand (Name n)
+        Qux.Gte -> icmp SGE lhsOperand rhsOperand (Name n)
+        Qux.Eq  -> icmp EQ lhsOperand rhsOperand (Name n)
+        Qux.Neq -> icmp NE lhsOperand rhsOperand (Name n)
+
+    return $ local (compileType type_) (Name n)
 compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
     operands <- mapM compileExpr arguments
 
     n <- freeName
 
-    append $ Name n := Call
-        { tailCallKind              = Nothing
-        , Llvm.callingConvention    = C
-        , Llvm.returnAttributes     = []
-        , function                  = Right $ ConstantOperand $ GlobalReference (compileType type_) (Name $ mangle id)
-        , arguments                 = [(op, []) | op <- operands]
-        , Llvm.functionAttributes   = []
-        , metadata                  = []
-        }
+    call (compileType type_) (Name $ mangle id) operands (Name n)
 
-    return $ LocalReference (compileType type_) (Name n)
+    return $ local (compileType type_) (Name n)
 compileExpr (TypedExpr type_ (ListExpr elements))           = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "new"] elements))
 compileExpr (TypedExpr type_ (UnaryExpr Len expr))          = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "len"] [expr]))
 compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
@@ -214,43 +151,25 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
 
     case op of
         Len -> undefined
-        Neg -> append $ Name n := Llvm.Mul
-            { nsw = False, nuw = False, metadata = []
-            , operand0 = operand, operand1 = ConstantOperand Int { integerBits = 32, integerValue = -1 }
-            }
+        Neg -> mul operand (constant $ int (-1)) (Name n)
 
-    return $ LocalReference (compileType type_) (Name n)
-compileExpr (TypedExpr _ (ValueExpr value))                 = return $ ConstantOperand (compileValue value)
-compileExpr (TypedExpr type_ (VariableExpr name))           = return $ LocalReference (compileType type_) (Name name)
+    return $ local (compileType type_) (Name n)
+compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant (compileValue value)
+compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (Name name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
 compileValue :: Value -> Constant
-compileValue (BoolValue bool)   = Int
-    { integerBits   = 1
-    , integerValue  = toInteger (fromEnum bool)
-    }
-compileValue (CharValue char)   = Int
-    { integerBits   = 8
-    , integerValue  = toInteger $ digitToInt char
-    }
-compileValue (IntValue int)     = Int
-    { integerBits   = 32
-    , integerValue  = toInteger int
-    }
+compileValue (BoolValue True)   = true
+compileValue (BoolValue False)  = false
+compileValue (CharValue c)      = char c
+compileValue (IntValue i)       = int i
 compileValue (ListValue _)      = error "internal error: cannot compile a list as a constant"
-compileValue NilValue           = Struct
-    { structName        = Nothing
-    , Constant.isPacked = True
-    , memberValues      = []
-    }
+compileValue NilValue           = nil
 
 compileType :: Qux.Type -> Llvm.Type
 compileType AnyType         = error "internal error: cannot compile an any type"
-compileType BoolType        = i1
-compileType CharType        = i8
-compileType IntType         = i32
-compileType (ListType _)    = NamedTypeReference $ Name (mangle ["qux", "lang", "list", "List"])
-compileType NilType         = StructureType
-    { Type.isPacked = True
-    , elementTypes  = []
-    }
+compileType BoolType        = boolType
+compileType CharType        = charType
+compileType IntType         = intType
+compileType (ListType _)    = listType
+compileType NilType         = nilType

@@ -70,10 +70,10 @@ addBlock :: MonadState Builder m => Name -> m ()
 addBlock name' = modify $ \s -> s & blocks %~ Map.insert name' (newBlockBuilder name')
 
 modifyBlock :: MonadState Builder m => (BlockBuilder -> BlockBuilder) -> m ()
-modifyBlock f = current >>= \c -> modify (\s -> s & blocks %~ Map.insert (c ^. name) (f c))
+modifyBlock f = currentBlock >>= \c -> modify (\s -> s & blocks %~ Map.insert (c ^. name) (f c))
 
-current :: MonadState Builder m => m BlockBuilder
-current = getBlock >>= \name -> uses blocks (flip (Map.!) name)
+currentBlock :: MonadState Builder m => m BlockBuilder
+currentBlock = getBlock >>= \name -> uses blocks (flip (Map.!) name)
 
 append :: MonadState Builder m => Named Instruction -> m ()
 append instr = modifyBlock $ \b -> b & stack %~ (`snoc` instr)

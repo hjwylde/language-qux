@@ -41,6 +41,7 @@ library
     other-modules:
         Language.Qux.Lexer
         Language.Qux.Llvm.Builder
+        Language.Qux.Llvm.Generator
         Paths_language_qux
 
     default-language: Haskell2010
