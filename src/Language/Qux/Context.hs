@@ -4,7 +4,7 @@ Description : Context data type and utility methods.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 Context data type and utility methods.
 -}

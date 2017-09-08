@@ -4,7 +4,7 @@ Description : A Parsec lexer for the Qux language.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 A "Text.Parsec" lexer for the Qux language.
 -}

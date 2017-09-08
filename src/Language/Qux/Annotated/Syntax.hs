@@ -4,7 +4,7 @@ Description : Abstract syntax tree nodes with annotations.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 Abstract syntax tree nodes with annotations.
 The annotation style was inspired by haskell-src-exts.

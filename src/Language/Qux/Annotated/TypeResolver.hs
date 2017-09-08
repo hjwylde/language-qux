@@ -4,7 +4,7 @@ Description : Type resolving functions that transform the abstract syntax tree t
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 Type resolving functions that transform the abstract syntax tree to a typed one.
 

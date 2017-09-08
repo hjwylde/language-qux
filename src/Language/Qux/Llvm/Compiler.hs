@@ -4,7 +4,7 @@ Description : Compiles a Qux program into LLVM IR.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 A compiler that takes a 'Program' and outputs a LLVM 'Module'.
 -}

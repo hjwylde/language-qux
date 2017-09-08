@@ -4,7 +4,7 @@ Description : Build utilities for the LLVM compiler.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 Build utilities for the LLVM compiler, see "Compiler".
 -}

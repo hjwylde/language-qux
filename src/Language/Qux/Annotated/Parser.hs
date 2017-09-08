@@ -4,7 +4,7 @@ Description : A Parsec indentation-based parser for generating a program.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 A "Text.Parsec" indentation-based parser for generating a 'Program'.
 -}

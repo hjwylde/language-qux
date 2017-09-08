@@ -4,7 +4,7 @@ Description : Type checking functions to verify that a 'Program' is type-safe.
 
 Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
-Maintainer  : public@hjwylde.com
+Maintainer  : hjwylde@gmail.com
 
 Type checking functions to verify that a 'Program' is type-safe.
 
