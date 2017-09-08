@@ -22,18 +22,19 @@ import Control.Lens         hiding (Context)
 import Control.Monad.Reader hiding (local)
 import Control.Monad.State
 
-import qualified Data.Map   as Map
+import qualified Data.Map    as Map
 import           Data.Maybe
+import           Data.String
 
 import Language.Qux.Context        hiding (local)
 import Language.Qux.Llvm.Builder   as Builder
 import Language.Qux.Llvm.Generator
 import Language.Qux.Syntax         as Qux
 
-import LLVM.General.AST                  as Llvm
-import LLVM.General.AST.Constant         as Constant hiding (exact, nsw, nuw, operand0, operand1)
-import LLVM.General.AST.Global           as Global
-import LLVM.General.AST.IntegerPredicate
+import LLVM.AST                  as Llvm
+import LLVM.AST.Constant         as Constant hiding (exact, nsw, nuw, operand0, operand1)
+import LLVM.AST.Global           as Global
+import LLVM.AST.IntegerPredicate
 
 import Prelude hiding (EQ)
 
@@ -43,16 +44,16 @@ import Prelude hiding (EQ)
 compileProgram :: Program -> Reader Context Module
 compileProgram (Program module_ decls) = do
     importedFunctions' <- views (imported . functions) (map (\(id, type_) -> GlobalDefinition functionDefaults
-        { Global.name       = Name $ mangle id
+        { Global.name       = mkName $ mangle id
         , Global.returnType = compileType $ fst (last type_)
-        , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+        , Global.parameters = ([Parameter (compileType t) (mkName p) [] | (t, p) <- init type_], False)
         }) . Map.toList)
 
     let externalFunctions =
             [ GlobalDefinition functionDefaults
-                { Global.name       = Name $ mangle (module_ ++ [name])
+                { Global.name       = mkName $ mangle (module_ ++ [name])
                 , Global.returnType = compileType $ fst (last type_)
-                , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+                , Global.parameters = ([Parameter (compileType t) (mkName p) [] | (t, p) <- init type_], False)
                 }
             | (FunctionDecl attrs name type_ _) <- decls, External `elem` attrs
             ]
@@ -63,16 +64,16 @@ compileProgram (Program module_ decls) = do
         , External `notElem` attrs
         ]
 
-    importedTypes' <- views (imported . types) (map $ \id -> TypeDefinition (Name $ mangle id) Nothing)
+    importedTypes' <- views (imported . types) (map $ \id -> TypeDefinition (mkName $ mangle id) Nothing)
 
     let externalTypes =
-            [ TypeDefinition (Name $ mangle (module_ ++ [name])) Nothing
+            [ TypeDefinition (mkName $ mangle (module_ ++ [name])) Nothing
             | (TypeDecl attrs name) <- decls
             , External `elem` attrs
             ]
 
     return $ defaultModule
-        { moduleName        = qualify module_
+        { moduleName        = fromString $ qualify module_
         , moduleDefinitions = concat
             [ importedFunctions'
             , externalFunctions
@@ -88,9 +89,9 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
     blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
 
     return $ GlobalDefinition functionDefaults
-        { Global.name       = Name $ mangle (module_' ++ [name])
+        { Global.name       = mkName $ mangle (module_' ++ [name])
         , Global.returnType = compileType $ fst (last type_)
-        , Global.parameters = ([Parameter (compileType t) (Name p) [] | (t, p) <- init type_], False)
+        , Global.parameters = ([Parameter (compileType t) (mkName p) [] | (t, p) <- init type_], False)
         , basicBlocks       = map (\b -> BasicBlock (b ^. Builder.name) (b ^. stack) (fromJust $ b ^. term)) (Map.elems $ blockBuilder ^. blocks)
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
@@ -117,45 +118,45 @@ compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))       = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
 
-    n <- freeName
+    name <- freeUnName
 
     case op of
         Qux.Acc -> undefined
-        Qux.Mul -> mul lhsOperand rhsOperand (Name n)
-        Qux.Div -> sdiv lhsOperand rhsOperand (Name n)
-        Qux.Mod -> srem lhsOperand rhsOperand (Name n)
-        Qux.Add -> add lhsOperand rhsOperand (Name n)
-        Qux.Sub -> sub lhsOperand rhsOperand (Name n)
-        Qux.Lt  -> icmp SLT lhsOperand rhsOperand (Name n)
-        Qux.Lte -> icmp SLE lhsOperand rhsOperand (Name n)
-        Qux.Gt  -> icmp SGT lhsOperand rhsOperand (Name n)
-        Qux.Gte -> icmp SGE lhsOperand rhsOperand (Name n)
-        Qux.Eq  -> icmp EQ lhsOperand rhsOperand (Name n)
-        Qux.Neq -> icmp NE lhsOperand rhsOperand (Name n)
+        Qux.Mul -> mul lhsOperand rhsOperand name
+        Qux.Div -> sdiv lhsOperand rhsOperand name
+        Qux.Mod -> srem lhsOperand rhsOperand name
+        Qux.Add -> add lhsOperand rhsOperand name
+        Qux.Sub -> sub lhsOperand rhsOperand name
+        Qux.Lt  -> icmp SLT lhsOperand rhsOperand name
+        Qux.Lte -> icmp SLE lhsOperand rhsOperand name
+        Qux.Gt  -> icmp SGT lhsOperand rhsOperand name
+        Qux.Gte -> icmp SGE lhsOperand rhsOperand name
+        Qux.Eq  -> icmp EQ lhsOperand rhsOperand name
+        Qux.Neq -> icmp NE lhsOperand rhsOperand name
 
-    return $ local (compileType type_) (Name n)
+    return $ local (compileType type_) name
 compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
     operands <- mapM compileExpr arguments
 
-    n <- freeName
+    name <- freeUnName
 
-    call (compileType type_) (Name $ mangle id) operands (Name n)
+    call (compileType type_) (mkName $ mangle id) operands name
 
-    return $ local (compileType type_) (Name n)
+    return $ local (compileType type_) name
 compileExpr (TypedExpr type_ (ListExpr elements))           = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "new"] elements))
 compileExpr (TypedExpr type_ (UnaryExpr Len expr))          = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "len"] [expr]))
 compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
     operand <- compileExpr expr
 
-    n <- freeName
+    name <- freeUnName
 
     case op of
         Len -> undefined
-        Neg -> mul operand (constant $ int (-1)) (Name n)
+        Neg -> mul operand (constant $ int (-1)) name
 
-    return $ local (compileType type_) (Name n)
+    return $ local (compileType type_) name
 compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant (compileValue value)
-compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (Name name)
+compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (mkName name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
 compileValue :: Value -> Constant

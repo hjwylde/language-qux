@@ -53,13 +53,13 @@ library
         MultiParamTypeClasses,
         TemplateHaskell
     build-depends:
-        base == 4.8.*,
+        base == 4.9.*,
         containers == 0.5.*,
-        extra == 1.4.*,
-        indents >= 0.3.3 && < 0.4,
-        lens,
-        llvm-general-pure == 3.5.*,
+        extra == 1.5.*,
+        indents == 0.4.*,
+        lens == 4.15.*,
+        llvm-hs-pure == 4.1.*,
         mtl == 2.2.*,
         parsec == 3.1.*,
-        pretty >= 1.1.2 && < 1.2,
-        transformers == 0.4.*
+        pretty == 1.1.*,
+        transformers == 0.5.*

@@ -21,11 +21,11 @@ import Control.Monad.State
 import Data.Char
 import Data.Maybe
 
-import LLVM.General.AST as Llvm
-import LLVM.General.AST.CallingConvention
-import LLVM.General.AST.Constant as Constant hiding (exact, nsw, nuw, operand0, operand1, iPredicate)
-import LLVM.General.AST.Type as Type
-import LLVM.General.AST.IntegerPredicate
+import LLVM.AST as Llvm
+import LLVM.AST.CallingConvention
+import LLVM.AST.Constant as Constant hiding (exact, nsw, nuw, operand0, operand1, iPredicate)
+import LLVM.AST.Type as Type
+import LLVM.AST.IntegerPredicate
 
 import Language.Qux.Syntax hiding (Type)
 import Language.Qux.Llvm.Builder
@@ -51,9 +51,9 @@ global type_ = constant . GlobalReference type_
 
 if_ :: MonadState Builder m => Operand -> m () -> m () -> m ()
 if_ operand mTrueInstrs mFalseInstrs = do
-    thenLabel <- Name <$> freeName
-    elseLabel <- Name <$> freeName
-    exitLabel <- Name <$> freeName
+    thenLabel <- freeUnName
+    elseLabel <- freeUnName
+    exitLabel <- freeUnName
 
     condBr operand thenLabel elseLabel
 
@@ -74,9 +74,9 @@ if_ operand mTrueInstrs mFalseInstrs = do
 
 while :: MonadState Builder m => m Operand -> m () -> m ()
 while mOperand mInstrs = do
-    whileLabel  <- Name <$> freeName
-    loopLabel   <- Name <$> freeName
-    exitLabel   <- Name <$> freeName
+    whileLabel  <- freeUnName
+    loopLabel   <- freeUnName
+    exitLabel   <- freeUnName
 
     br whileLabel
 
@@ -226,7 +226,7 @@ intType :: Type
 intType = i32
 
 listType :: Type
-listType = NamedTypeReference $ Name (mangle ["qux", "lang", "list", "List"])
+listType = NamedTypeReference . mkName $ mangle ["qux", "lang", "list", "List"]
 
 nilType :: Type
 nilType = StructureType

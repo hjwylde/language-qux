@@ -21,7 +21,7 @@ import Control.Monad.State
 
 import Data.Map as Map
 
-import LLVM.General.AST
+import LLVM.AST
 
 data Builder = Builder
     { _currentBlockName :: Name
@@ -48,7 +48,7 @@ initialBuilder = Builder
     , _counter          = 1
     }
     where
-        name' = Name ".0"
+        name' = UnName 0
 
 defaultBlockBuilder :: BlockBuilder
 defaultBlockBuilder = BlockBuilder
@@ -81,8 +81,5 @@ append instr = modifyBlock $ \b -> b & stack %~ (`snoc` instr)
 terminate :: MonadState Builder m => Named Terminator -> m ()
 terminate term' = modifyBlock $ \b -> b & term .~ Just term'
 
-freeName :: MonadState Builder m => m String
-freeName = (('.':) . show) <$> freeUnName
-
-freeUnName :: MonadState Builder m => m Word
-freeUnName = use counter <* (counter += 1)
+freeUnName :: MonadState Builder m => m Name
+freeUnName = UnName <$> use counter <* (counter += 1)

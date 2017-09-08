@@ -1,8 +1,6 @@
-resolver: lts-3.22
+resolver: lts-9.0
 ghc-options:
     language-qux: -Werror -Wall -fno-warn-name-shadowing
 
 packages:
 - '.'
-extra-deps:
-- llvm-general-pure-3.5.1.0

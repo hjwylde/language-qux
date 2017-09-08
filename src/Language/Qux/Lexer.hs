@@ -13,63 +13,63 @@ A "Text.Parsec" lexer for the Qux language.
 
 module Language.Qux.Lexer where
 
-import Control.Monad.State
+import Control.Monad
 
-import           Text.Parsec       hiding (State)
+import           Text.Parsec
 import qualified Text.Parsec.Token as Token
 
-lexer :: Token.GenTokenParser String u (State SourcePos)
+lexer :: Monad m => Token.GenTokenParser String u m
 lexer = Token.makeTokenParser quxDef
 
-charLiteral :: ParsecT String u (State SourcePos) Char
+charLiteral :: Monad m => ParsecT String u m Char
 charLiteral = Token.charLiteral lexer
 
-identifier :: ParsecT String u (State SourcePos) String
+identifier :: Monad m => ParsecT String u m String
 identifier = lookAhead (lower <|> char '_') *> Token.identifier lexer
 
-typeIdentifier :: ParsecT String u (State SourcePos) String
+typeIdentifier :: Monad m => ParsecT String u m String
 typeIdentifier = lookAhead upper *> Token.identifier lexer
 
-natural :: ParsecT String u (State SourcePos) Integer
+natural :: Monad m => ParsecT String u m Integer
 natural = Token.natural lexer
 
-operator :: String -> ParsecT String u (State SourcePos) ()
+operator :: Monad m => String -> ParsecT String u m ()
 operator = Token.reservedOp lexer
 
-reserved :: String -> ParsecT String u (State SourcePos) ()
+reserved :: Monad m => String -> ParsecT String u m ()
 reserved = Token.reserved lexer
 
-symbol :: String -> ParsecT String u (State SourcePos) String
+symbol :: Monad m => String -> ParsecT String u m String
 symbol = Token.symbol lexer
 
-symbol_ :: String -> ParsecT String u (State SourcePos) ()
+symbol_ :: Monad m => String -> ParsecT String u m ()
 symbol_ = void . symbol
 
-whiteSpace :: ParsecT String u (State SourcePos) ()
+whiteSpace :: Monad m => ParsecT String u m ()
 whiteSpace = Token.whiteSpace lexer
 
-brackets :: ParsecT String u (State SourcePos) a -> ParsecT String u (State SourcePos) a
+brackets :: Monad m => ParsecT String u m a -> ParsecT String u m a
 brackets = Token.brackets lexer
 
-colon :: ParsecT String u (State SourcePos) ()
+colon :: Monad m => ParsecT String u m ()
 colon = symbol_ ":"
 
-comma :: ParsecT String u (State SourcePos) ()
+comma :: Monad m => ParsecT String u m ()
 comma = symbol_ ","
 
-dot :: ParsecT String u (State SourcePos) ()
+dot :: Monad m => ParsecT String u m ()
 dot = symbol_ "."
 
-parens :: ParsecT String u (State SourcePos) a -> ParsecT String u (State SourcePos) a
+parens :: Monad m => ParsecT String u m a -> ParsecT String u m a
 parens = Token.parens lexer
 
-pipes :: ParsecT String u (State SourcePos) a -> ParsecT String u (State SourcePos) a
+pipes :: Monad m => ParsecT String u m a -> ParsecT String u m a
 pipes p = Token.lexeme lexer $ between (symbol "|") (symbol "|") p
 
-rightArrow :: ParsecT String u (State SourcePos) ()
+rightArrow :: Monad m => ParsecT String u m ()
 rightArrow = symbol_ "->"
 
-quxDef :: Token.GenLanguageDef String u (State SourcePos)
+quxDef :: Monad m => Token.GenLanguageDef String u m
 quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments identStart identLetter
     opStart opLetter reservedNames reservedOpNames caseSensitive
         where

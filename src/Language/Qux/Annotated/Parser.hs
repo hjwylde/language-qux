@@ -22,8 +22,9 @@ module Language.Qux.Annotated.Parser (
     id_, typeId, program, decl, attribute, stmt, expr, value, type_,
 ) where
 
-import Control.Monad.State
 import Control.Monad.Trans.Except
+
+import Data.Functor.Identity
 
 import Language.Qux.Annotated.Syntax
 import Language.Qux.Lexer
@@ -32,14 +33,14 @@ import Text.Parsec        hiding (State, parse)
 import Text.Parsec.Expr
 import Text.Parsec.Indent
 
--- | A 'ParsecT' that retains indentation information.
-type Parser a = ParsecT String () (State SourcePos) a
+-- | An 'IndentParser'.
+type Parser a = IndentParser String () a
 
 -- | @parse parser sourceName input@ parses @input@ using @parser@.
 --   Returns either a 'ParseError' or @a@.
---   This method wraps 'runParserT' by running the indentation resolver over the parser's state.
+--   This method wraps 'runIndentParser' by turning the 'Either' into an 'Except'.
 parse :: Parser a -> SourceName -> String -> Except ParseError a
-parse parser sourceName input = except $ runIndent sourceName (runParserT parser () sourceName input)
+parse parser sourceName input = except $ runIndentParser parser () sourceName input
 
 -- | 'Id' parser (must start with a lowercase letter or underscore).
 id_ :: Parser (Id SourcePos)
@@ -152,7 +153,7 @@ term = getPosition >>= \pos -> choice
     , ValueExpr pos       <$> value
     ]
 
-table :: OperatorTable String () (State SourcePos) (Expr SourcePos)
+table :: OperatorTable String () (IndentT Identity) (Expr SourcePos)
 table =
     [ [ Prefix (unaryExpr Neg "-")
       ],
