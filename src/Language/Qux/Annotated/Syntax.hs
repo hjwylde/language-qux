@@ -45,7 +45,7 @@ import Data.List
 import Data.Tuple.Extra
 
 import           Language.Qux.Syntax (BinaryOp (..), UnaryOp (..), Value (..), pShow)
-import qualified Language.Qux.Syntax as S
+import qualified Language.Qux.Syntax as Simp
 
 import Text.PrettyPrint.HughesPJClass
 
@@ -86,8 +86,8 @@ instance Annotated Program where
 instance Eq (Program a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (Program a) S.Program where
-    simp (Program _ module_ decls) = S.Program (map simp module_) (map simp decls)
+instance Simplifiable (Program a) Simp.Program where
+    simp (Program _ module_ decls) = Simp.Program (map simp module_) (map simp decls)
 
 instance Pretty (Program a) where
     pPrint = pPrint . simp
@@ -107,10 +107,10 @@ instance Annotated Decl where
 instance Eq (Decl a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (Decl a) S.Decl where
-    simp (FunctionDecl _ attrs name type_ stmts)    = S.FunctionDecl (map simp attrs) (simp name) (map (simp *** simp) type_) (map simp stmts)
-    simp (ImportDecl _ id)                          = S.ImportDecl $ map simp id
-    simp (TypeDecl _ attrs name)                    = S.TypeDecl (map simp attrs) (simp name)
+instance Simplifiable (Decl a) Simp.Decl where
+    simp (FunctionDecl _ attrs name type_ stmts)    = Simp.FunctionDecl (map simp attrs) (simp name) (map (simp *** simp) type_) (map simp stmts)
+    simp (ImportDecl _ id)                          = Simp.ImportDecl $ map simp id
+    simp (TypeDecl _ attrs name)                    = Simp.TypeDecl (map simp attrs) (simp name)
 
 instance Pretty (Decl a) where
     pPrint = pPrint . simp
@@ -125,8 +125,8 @@ instance Annotated Attribute where
 instance Eq (Attribute a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (Attribute a) S.Attribute where
-    simp (External _) = S.External
+instance Simplifiable (Attribute a) Simp.Attribute where
+    simp (External _) = Simp.External
 
 instance Pretty (Attribute a) where
     pPrint = pPrint . simp
@@ -145,10 +145,10 @@ instance Annotated Stmt where
 instance Eq (Stmt a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (Stmt a) S.Stmt where
-    simp (IfStmt _ condition trueStmts falseStmts)  = S.IfStmt (simp condition) (map simp trueStmts) (map simp falseStmts)
-    simp (ReturnStmt _ expr)                        = S.ReturnStmt (simp expr)
-    simp (WhileStmt _ condition stmts)              = S.WhileStmt (simp condition) (map simp stmts)
+instance Simplifiable (Stmt a) Simp.Stmt where
+    simp (IfStmt _ condition trueStmts falseStmts)  = Simp.IfStmt (simp condition) (map simp trueStmts) (map simp falseStmts)
+    simp (ReturnStmt _ expr)                        = Simp.ReturnStmt (simp expr)
+    simp (WhileStmt _ condition stmts)              = Simp.WhileStmt (simp condition) (map simp stmts)
 
 instance Pretty (Stmt a) where
     pPrint = pPrint . simp
@@ -160,7 +160,7 @@ data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name (un
             | CallExpr a [Id a] [Expr a]                -- ^ A function id (resolved) to call and
                                                         --   the arguments to pass as parameters.
             | ListExpr a [Expr a]                       -- ^ A list expression.
-            | TypedExpr a S.Type (Expr a)               -- ^ A typed expression.
+            | TypedExpr a Simp.Type (Expr a)            -- ^ A typed expression.
                                                         --   See "Language.Qux.Annotated.TypeResolver".
             | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
             | ValueExpr a Value                         -- ^ A raw value.
@@ -180,15 +180,15 @@ instance Annotated Expr where
 instance Eq (Expr a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (Expr a) S.Expr where
-    simp (ApplicationExpr _ name arguments) = S.ApplicationExpr (simp name) (map simp arguments)
-    simp (BinaryExpr _ op lhs rhs)          = S.BinaryExpr op (simp lhs) (simp rhs)
-    simp (CallExpr _ id arguments)          = S.CallExpr (map simp id) (map simp arguments)
-    simp (ListExpr _ elements)              = S.ListExpr (map simp elements)
-    simp (TypedExpr _ type_ expr)           = S.TypedExpr type_ (simp expr)
-    simp (UnaryExpr _ op expr)              = S.UnaryExpr op (simp expr)
-    simp (ValueExpr _ value)                = S.ValueExpr value
-    simp (VariableExpr _ name)              = S.VariableExpr $ simp name
+instance Simplifiable (Expr a) Simp.Expr where
+    simp (ApplicationExpr _ name arguments) = Simp.ApplicationExpr (simp name) (map simp arguments)
+    simp (BinaryExpr _ op lhs rhs)          = Simp.BinaryExpr op (simp lhs) (simp rhs)
+    simp (CallExpr _ id arguments)          = Simp.CallExpr (map simp id) (map simp arguments)
+    simp (ListExpr _ elements)              = Simp.ListExpr (map simp elements)
+    simp (TypedExpr _ type_ expr)           = Simp.TypedExpr type_ (simp expr)
+    simp (UnaryExpr _ op expr)              = Simp.UnaryExpr op (simp expr)
+    simp (ValueExpr _ value)                = Simp.ValueExpr value
+    simp (VariableExpr _ name)              = Simp.VariableExpr $ simp name
 
 instance Pretty (Expr a) where
     pPrint = pPrint . simp
@@ -213,13 +213,13 @@ instance Annotated Type where
 instance Eq (Type a) where
     (==) = (==) `on` simp
 
-instance Simplifiable (Type a) S.Type where
-    simp (AnyType _)        = S.AnyType
-    simp (BoolType _)       = S.BoolType
-    simp (CharType _)       = S.CharType
-    simp (IntType _)        = S.IntType
-    simp (ListType _ inner) = S.ListType $ simp inner
-    simp (NilType _)        = S.NilType
+instance Simplifiable (Type a) Simp.Type where
+    simp (AnyType _)        = Simp.AnyType
+    simp (BoolType _)       = Simp.BoolType
+    simp (CharType _)       = Simp.CharType
+    simp (IntType _)        = Simp.IntType
+    simp (ListType _ inner) = Simp.ListType $ simp inner
+    simp (NilType _)        = Simp.NilType
 
 instance Pretty (Type a) where
     pPrint = pPrint . simp
