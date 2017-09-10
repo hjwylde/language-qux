@@ -1,7 +1,0 @@
-module head
-
-main :: Int:
-    return head [5, 10, 2]
-
-head :: [Int] xs -> Int:
-    return xs !! 0
