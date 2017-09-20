@@ -7,11 +7,12 @@
 * Added in name resolution. ([#15](https://github.com/hjwylde/language-qux/issues/15))
 * Added in import statements. ([#8](https://github.com/hjwylde/language-qux/issues/8))
 * Added in `external` function attribute. ([#16](https://github.com/hjwylde/language-qux/issues/16))
-* Added in `Char` type and character literals. ([#10](https://github.com/hjwylde/language-qux/issues/10))
+* Added in `Str` type and string literals.
 * Added in external type declarations. ([#27](https://github.com/hjwylde/language-qux/issues/27))
 * Updated to use LLVM 3.5. ([#7](https://github.com/hjwylde/language-qux/issues/7))
 * Fixed external function declarations from requiring parameter names. ([#41](https://github.com/hjwylde/language-qux/issues/41))
 * Added in an `Any` type. ([#17](https://github.com/hjwylde/language-qux/issues/17))
+* Removed `List` type and expressions.
 
 *Minor*
 
