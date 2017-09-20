@@ -22,7 +22,7 @@ module Language.Qux.Annotated.Exception (
 
 import Control.Exception
 
-import Data.List
+import Data.String.Extra
 import Data.Typeable
 
 import Language.Qux.Annotated.Parser
@@ -115,7 +115,3 @@ instance Exception ResolveException
 
 instance Show ResolveException where
     show = fullMessage
-
-sentence :: String -> [String] -> String
-sentence _ [x]  = x
-sentence sep xs = unwords [intercalate ", " (map show $ init xs), sep, show $ last xs]

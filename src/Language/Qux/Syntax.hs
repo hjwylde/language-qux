@@ -16,7 +16,7 @@ module Language.Qux.Syntax (
     Id, Program(..), Decl(..), Attribute(..), Stmt(..), Expr(..), BinaryOp(..),
     UnaryOp(..), Value(..), Type(..),
 
-    -- * Extra methods
+    -- * Extra functions
 
     -- ** Utility
     qualify, mangle,

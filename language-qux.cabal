@@ -39,6 +39,7 @@ library
         Language.Qux.Syntax
         Language.Qux.Version
     other-modules:
+        Data.String.Extra
         Language.Qux.Lexer
         Language.Qux.Llvm.Builder
         Language.Qux.Llvm.Generator
