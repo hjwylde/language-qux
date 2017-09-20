@@ -18,7 +18,6 @@ module Language.Qux.Llvm.Generator where
 import Control.Lens
 import Control.Monad.State
 
-import Data.Char
 import Data.Maybe
 
 import LLVM.AST as Llvm
@@ -194,12 +193,6 @@ false = Int
     , integerValue  = 0
     }
 
-char :: Char -> Constant
-char c = Int
-    { integerBits   = 8
-    , integerValue  = toInteger $ digitToInt c
-    }
-
 int :: Integer -> Constant
 int i = Int
     { integerBits   = 32
@@ -213,13 +206,13 @@ nil = Struct
     , memberValues      = []
     }
 
+string :: String -> Constant
+string _ = undefined
+
 -- Types
 
 boolType :: Type
 boolType = i1
-
-charType :: Type
-charType = i8
 
 intType :: Type
 intType = i32
@@ -229,3 +222,6 @@ nilType = StructureType
     { Type.isPacked = True
     , elementTypes  = []
     }
+
+strType :: Type
+strType = undefined

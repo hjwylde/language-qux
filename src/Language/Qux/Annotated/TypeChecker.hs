@@ -142,6 +142,6 @@ isSubtype first second  = first == second
 attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos AnyType  = Ann.AnyType pos
 attach pos BoolType = Ann.BoolType pos
-attach pos CharType = Ann.CharType pos
-attach pos IntType  = Ann.IntType  pos
-attach pos NilType  = Ann.NilType  pos
+attach pos IntType  = Ann.IntType pos
+attach pos NilType  = Ann.NilType pos
+attach pos StrType  = Ann.StrType pos

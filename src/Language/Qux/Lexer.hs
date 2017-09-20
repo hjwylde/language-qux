@@ -21,8 +21,8 @@ import qualified Text.Parsec.Token as Token
 lexer :: Monad m => Token.GenTokenParser String u m
 lexer = Token.makeTokenParser quxDef
 
-charLiteral :: Monad m => ParsecT String u m Char
-charLiteral = Token.charLiteral lexer
+stringLiteral :: Monad m => ParsecT String u m String
+stringLiteral = Token.stringLiteral lexer
 
 identifier :: Monad m => ParsecT String u m String
 identifier = lookAhead (lower <|> char '_') *> Token.identifier lexer
@@ -85,7 +85,7 @@ keywords =
     , "external", "import", "module", "type"
     , "else", "if", "return", "while"
     , "false", "nil", "true"
-    , "Any", "Bool", "Int", "Nil"
+    , "Any", "Bool", "Int", "Nil", "Str"
     ]
 
 operators :: [String]

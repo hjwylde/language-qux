@@ -184,9 +184,9 @@ value :: Parser Value
 value = choice
     [ BoolValue False <$  reserved "false"
     , BoolValue True  <$  reserved "true"
-    , CharValue       <$> charLiteral
     , IntValue        <$> natural
     , NilValue        <$  reserved "nil"
+    , StrValue        <$> stringLiteral
     ] <?> "value"
 
 -- | 'Type' parser.
@@ -194,7 +194,7 @@ type_ :: Parser (Type SourcePos)
 type_ = getPosition >>= \pos -> choice
     [ AnyType pos <$  reserved "Any"
     , BoolType pos <$ reserved "Bool"
-    , CharType pos <$ reserved "Char"
     , IntType  pos <$ reserved "Int"
     , NilType  pos <$ reserved "Nil"
+    , StrType pos <$  reserved "Str"
     ] <?> "type"

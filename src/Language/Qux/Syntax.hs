@@ -148,31 +148,31 @@ instance Pretty UnaryOp where
 
 -- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
-            | CharValue Char    -- ^ A character.
             | IntValue Integer  -- ^ An unbounded integer.
             | NilValue          -- ^ A unit value.
+            | StrValue String   -- ^ A string.
     deriving (Eq, Show)
 
 instance Pretty Value where
     pPrint (BoolValue bool) = text $ lower (show bool)
-    pPrint (CharValue c)    = char c
     pPrint (IntValue int)   = text $ show int
     pPrint NilValue         = text "nil"
+    pPrint (StrValue str)   = char '"' <> text str <> char '"'
 
 -- | A type.
 data Type   = AnyType
             | BoolType
-            | CharType
             | IntType
             | NilType
+            | StrType
     deriving (Eq, Show)
 
 instance Pretty Type where
     pPrint AnyType  = text "Any"
     pPrint BoolType = text "Bool"
-    pPrint CharType = text "Char"
     pPrint IntType  = text "Int"
     pPrint NilType  = text "Nil"
+    pPrint StrType  = text "Str"
 
 -- | Qualifies the identifier into a single 'Id' joined with periods.
 qualify :: [Id] -> Id

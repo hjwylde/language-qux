@@ -157,13 +157,13 @@ compileExpr _                                               = error "internal er
 compileValue :: Value -> Constant
 compileValue (BoolValue True)   = true
 compileValue (BoolValue False)  = false
-compileValue (CharValue c)      = char c
 compileValue (IntValue i)       = int i
 compileValue NilValue           = nil
+compileValue (StrValue str)     = string str
 
 compileType :: Qux.Type -> Llvm.Type
 compileType AnyType     = error "internal error: cannot compile an any type"
 compileType BoolType    = boolType
-compileType CharType    = charType
 compileType IntType     = intType
 compileType NilType     = nilType
+compileType StrType     = strType

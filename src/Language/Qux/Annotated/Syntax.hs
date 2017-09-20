@@ -193,17 +193,17 @@ instance Pretty (Expr a) where
 -- | A type.
 data Type a = AnyType a
             | BoolType a
-            | CharType a
             | IntType a
             | NilType a
+            | StrType a
     deriving (Functor, Show)
 
 instance Annotated Type where
     ann (AnyType a)     = a
     ann (BoolType a)    = a
-    ann (CharType a)    = a
     ann (IntType a)     = a
     ann (NilType a)     = a
+    ann (StrType a)     = a
 
 instance Eq (Type a) where
     (==) = (==) `on` simp
@@ -211,9 +211,9 @@ instance Eq (Type a) where
 instance Simplifiable (Type a) Simp.Type where
     simp (AnyType _)    = Simp.AnyType
     simp (BoolType _)   = Simp.BoolType
-    simp (CharType _)   = Simp.CharType
     simp (IntType _)    = Simp.IntType
     simp (NilType _)    = Simp.NilType
+    simp (StrType _)    = Simp.StrType
 
 instance Pretty (Type a) where
     pPrint = pPrint . simp

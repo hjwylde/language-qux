@@ -127,9 +127,9 @@ resolveExpr e@(Ann.VariableExpr pos name)   = gets (fromJust . Map.lookup (simp 
 -- | Resolves the type of a value.
 resolveValue :: Value -> Type
 resolveValue (BoolValue _)  = BoolType
-resolveValue (CharValue _)  = CharType
 resolveValue (IntValue _)   = IntType
 resolveValue NilValue       = NilType
+resolveValue (StrValue _)   = StrType
 
 -- | Extracts the type from a 'Ann.TypedExpr'.
 --   If the expression isn't an 'Ann.TypedExpr', an error is raised.
