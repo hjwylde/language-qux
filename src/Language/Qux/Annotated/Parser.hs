@@ -118,7 +118,7 @@ attribute = getPosition >>= \pos -> External pos <$ keyword "external"
 
 -- | 'Stmt' parser.
 stmt :: Parser (Stmt SourcePos)
-stmt = choice [ifStmt, returnStmt, whileStmt] <?> "statement"
+stmt = choice [ifStmt, callStmt, returnStmt, whileStmt] <?> "statement"
     where
         ifStmt      = do
             pos <- getPosition
@@ -131,6 +131,7 @@ stmt = choice [ifStmt, returnStmt, whileStmt] <?> "statement"
             falseStmts <- option [] (checkIndent >> withBlock' (do { keyword "else"; colon }) stmt)
 
             return $ IfStmt pos condition trueStmts falseStmts
+        callStmt    = CallStmt <$> getPosition <*> application
         returnStmt  = ReturnStmt <$> getPosition <* keyword "return" <*> expr
         whileStmt   = do
             pos <- getPosition

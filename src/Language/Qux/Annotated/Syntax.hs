@@ -130,12 +130,14 @@ instance Pretty (Attribute a) where
 
 -- | A statement.
 data Stmt a = IfStmt a (Expr a) [Stmt a] [Stmt a]   -- ^ A condition, true block and false block of statements.
+            | CallStmt a (Expr a)                   -- ^ A call statement.
             | ReturnStmt a (Expr a)                 -- ^ An expression.
             | WhileStmt a (Expr a) [Stmt a]         -- ^ A condition and block of statements.
     deriving (Functor, Show)
 
 instance Annotated Stmt where
     ann (IfStmt a _ _ _)    = a
+    ann (CallStmt a _ )     = a
     ann (ReturnStmt a _)    = a
     ann (WhileStmt a _ _)   = a
 
@@ -144,6 +146,7 @@ instance Eq (Stmt a) where
 
 instance Simplifiable (Stmt a) Simp.Stmt where
     simp (IfStmt _ condition trueStmts falseStmts)  = Simp.IfStmt (simp condition) (map simp trueStmts) (map simp falseStmts)
+    simp (CallStmt _ expr)                          = Simp.CallStmt (simp expr)
     simp (ReturnStmt _ expr)                        = Simp.ReturnStmt (simp expr)
     simp (WhileStmt _ condition stmts)              = Simp.WhileStmt (simp condition) (map simp stmts)
 

@@ -104,6 +104,8 @@ compileStmt (IfStmt condition trueStmts falseStmts) = do
     if_ operand
         (mapM_ compileStmt trueStmts)
         (mapM_ compileStmt falseStmts)
+compileStmt (CallStmt expr)                         = do
+    compileExpr_ expr
 compileStmt (ReturnStmt expr)                       = do
     operand <- compileExpr expr
 
@@ -153,6 +155,9 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
 compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant (compileValue value)
 compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (mkName name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
+
+compileExpr_ :: Expr -> StateT Builder (Reader Context) ()
+compileExpr_ = void <$> compileExpr
 
 compileValue :: Value -> Constant
 compileValue (BoolValue True)   = true

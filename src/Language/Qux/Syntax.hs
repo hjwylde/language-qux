@@ -71,6 +71,7 @@ instance Pretty Attribute where
 
 -- | A statement.
 data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false block of statements.
+            | CallStmt Expr             -- ^ A call statement.
             | ReturnStmt Expr           -- ^ An expression.
             | WhileStmt Expr [Stmt]     -- ^ A condition and block of statements.
     deriving (Eq, Show)
@@ -82,6 +83,7 @@ instance Pretty Stmt where
         , if null falseStmts then empty else text "else" <> colon
         , block falseStmts
         ]
+    pPrint (CallStmt expr)                          = pPrint expr
     pPrint (ReturnStmt expr)                        = text "return" <+> pPrint expr
     pPrint (WhileStmt condition stmts)              = vcat
         [ text "while" <+> pPrint condition <> colon

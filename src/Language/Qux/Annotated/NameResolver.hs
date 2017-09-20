@@ -107,6 +107,10 @@ resolveStmt (Ann.IfStmt pos condition trueStmts falseStmts) = do
     falseStmts' <- resolveBlock falseStmts
 
     return $ Ann.IfStmt pos condition' trueStmts' falseStmts'
+resolveStmt (Ann.CallStmt pos expr)                         = do
+    expr' <- resolveExpr expr
+
+    return $ Ann.CallStmt pos expr'
 resolveStmt (Ann.ReturnStmt pos expr)                       = do
     expr' <- resolveExpr expr
 

@@ -80,16 +80,18 @@ checkBlock = mapM_ checkStmt
 
 -- | Type checks a statement.
 checkStmt :: Ann.Stmt SourcePos -> StateT Locals Check ()
-checkStmt (Ann.IfStmt _ condition trueStmts falseStmts)   = do
+checkStmt (Ann.IfStmt _ condition trueStmts falseStmts) = do
     expectExpr_ condition [BoolType]
 
     checkBlock trueStmts
     checkBlock falseStmts
-checkStmt (Ann.ReturnStmt _ expr)                         = do
+checkStmt (Ann.CallStmt _ expr)                         = do
+    expectExpr_ expr [NilType]
+checkStmt (Ann.ReturnStmt _ expr)                       = do
     expected <- gets (Map.! "@")
 
     expectExpr_ expr [expected]
-checkStmt (Ann.WhileStmt _ condition stmts)               = do
+checkStmt (Ann.WhileStmt _ condition stmts)             = do
     expectExpr_ condition [BoolType]
 
     checkBlock stmts
