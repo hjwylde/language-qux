@@ -96,7 +96,6 @@ data Expr   = ApplicationExpr Id [Expr]     -- ^ A function name (unresolved) to
             | BinaryExpr BinaryOp Expr Expr -- ^ A binary operation.
             | CallExpr [Id] [Expr]          -- ^ A function identifier (resolved) to call and the
                                             --   arguments to pass as parameters.
-            | ListExpr [Expr]               -- ^ A list expression.
             | TypedExpr Type Expr           -- ^ A typed expression.
                                             --   See "Language.Qux.Annotated.TypeResolver".
             | UnaryExpr UnaryOp Expr        -- ^ A unary operation.
@@ -108,16 +107,13 @@ instance Pretty Expr where
     pPrint (ApplicationExpr name arguments) = text name <+> fsep (map pPrint arguments)
     pPrint (BinaryExpr op lhs rhs)          = parens $ fsep [pPrint lhs, pPrint op, pPrint rhs]
     pPrint (CallExpr id arguments)          = text (qualify id) <+> fsep (map pPrint arguments)
-    pPrint (ListExpr elements)              = brackets $ fsep (punctuate comma (map pPrint elements))
     pPrint (TypedExpr _ expr)               = pPrint expr
-    pPrint (UnaryExpr Len expr)             = char '|' <> pPrint expr <> char '|'
     pPrint (UnaryExpr op expr)              = pPrint op <> pPrint expr
     pPrint (ValueExpr value)                = pPrint value
     pPrint (VariableExpr name)              = text name
 
 -- | A binary operator.
-data BinaryOp   = Acc -- ^ List access.
-                | Mul -- ^ Multiplicaiton.
+data BinaryOp   = Mul -- ^ Multiplicaiton.
                 | Div -- ^ Division.
                 | Mod -- ^ Modulus.
                 | Add -- ^ Addition.
@@ -131,7 +127,6 @@ data BinaryOp   = Acc -- ^ List access.
     deriving (Eq, Show)
 
 instance Pretty BinaryOp where
-    pPrint Acc = text "!!"
     pPrint Mul = text "*"
     pPrint Div = text "/"
     pPrint Mod = text "%"
@@ -145,45 +140,39 @@ instance Pretty BinaryOp where
     pPrint Neq = text "!="
 
 -- | A unary operator.
-data UnaryOp    = Len -- ^ List length.
-                | Neg -- ^ Negation.
+data UnaryOp = Neg -- ^ Negation.
     deriving (Eq, Show)
 
 instance Pretty UnaryOp where
-    pPrint Len = text "length"
     pPrint Neg = text "-"
 
 -- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
             | CharValue Char    -- ^ A character.
             | IntValue Integer  -- ^ An unbounded integer.
-            | ListValue [Value] -- ^ A normalised list value.
             | NilValue          -- ^ A unit value.
     deriving (Eq, Show)
 
 instance Pretty Value where
-    pPrint (BoolValue bool)     = text $ lower (show bool)
-    pPrint (CharValue c)        = char c
-    pPrint (IntValue int)       = text $ show int
-    pPrint (ListValue elements) = brackets $ fsep (punctuate comma (map pPrint elements))
-    pPrint NilValue             = text "nil"
+    pPrint (BoolValue bool) = text $ lower (show bool)
+    pPrint (CharValue c)    = char c
+    pPrint (IntValue int)   = text $ show int
+    pPrint NilValue         = text "nil"
 
 -- | A type.
 data Type   = AnyType
             | BoolType
             | CharType
             | IntType
-            | ListType Type -- ^ A list type with an inner type.
             | NilType
     deriving (Eq, Show)
 
 instance Pretty Type where
-    pPrint AnyType          = text "Any"
-    pPrint BoolType         = text "Bool"
-    pPrint CharType         = text "Char"
-    pPrint IntType          = text "Int"
-    pPrint (ListType inner) = brackets $ pPrint inner
-    pPrint NilType          = text "Nil"
+    pPrint AnyType  = text "Any"
+    pPrint BoolType = text "Bool"
+    pPrint CharType = text "Char"
+    pPrint IntType  = text "Int"
+    pPrint NilType  = text "Nil"
 
 -- | Qualifies the identifier into a single 'Id' joined with periods.
 qualify :: [Id] -> Id

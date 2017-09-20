@@ -48,9 +48,6 @@ symbol_ = void . symbol
 whiteSpace :: Monad m => ParsecT String u m ()
 whiteSpace = Token.whiteSpace lexer
 
-brackets :: Monad m => ParsecT String u m a -> ParsecT String u m a
-brackets = Token.brackets lexer
-
 colon :: Monad m => ParsecT String u m ()
 colon = symbol_ ":"
 
@@ -62,9 +59,6 @@ dot = symbol_ "."
 
 parens :: Monad m => ParsecT String u m a -> ParsecT String u m a
 parens = Token.parens lexer
-
-pipes :: Monad m => ParsecT String u m a -> ParsecT String u m a
-pipes p = Token.lexeme lexer $ between (symbol "|") (symbol "|") p
 
 rightArrow :: Monad m => ParsecT String u m ()
 rightArrow = symbol_ "->"
@@ -96,8 +90,7 @@ keywords =
 
 operators :: [String]
 operators =
-    [ "!!", "|"
-    , "*", "/", "%"
+    [ "*", "/", "%"
     , "+", "-"
     , "<", "<=", ">", ">="
     , "==", "!="

@@ -159,7 +159,6 @@ data Expr a = ApplicationExpr a (Id a) [Expr a]         -- ^ A function name (un
             | BinaryExpr a BinaryOp (Expr a) (Expr a)   -- ^ A binary operation.
             | CallExpr a [Id a] [Expr a]                -- ^ A function id (resolved) to call and
                                                         --   the arguments to pass as parameters.
-            | ListExpr a [Expr a]                       -- ^ A list expression.
             | TypedExpr a Simp.Type (Expr a)            -- ^ A typed expression.
                                                         --   See "Language.Qux.Annotated.TypeResolver".
             | UnaryExpr a UnaryOp (Expr a)              -- ^ A unary operation.
@@ -171,7 +170,6 @@ instance Annotated Expr where
     ann (ApplicationExpr a _ _) = a
     ann (BinaryExpr a _ _ _)    = a
     ann (CallExpr a _ _)        = a
-    ann (ListExpr a _)          = a
     ann (TypedExpr a _ _)       = a
     ann (UnaryExpr a _ _)       = a
     ann (ValueExpr a _)         = a
@@ -184,7 +182,6 @@ instance Simplifiable (Expr a) Simp.Expr where
     simp (ApplicationExpr _ name arguments) = Simp.ApplicationExpr (simp name) (map simp arguments)
     simp (BinaryExpr _ op lhs rhs)          = Simp.BinaryExpr op (simp lhs) (simp rhs)
     simp (CallExpr _ id arguments)          = Simp.CallExpr (map simp id) (map simp arguments)
-    simp (ListExpr _ elements)              = Simp.ListExpr (map simp elements)
     simp (TypedExpr _ type_ expr)           = Simp.TypedExpr type_ (simp expr)
     simp (UnaryExpr _ op expr)              = Simp.UnaryExpr op (simp expr)
     simp (ValueExpr _ value)                = Simp.ValueExpr value
@@ -198,7 +195,6 @@ data Type a = AnyType a
             | BoolType a
             | CharType a
             | IntType a
-            | ListType a (Type a) -- ^ A list type with an inner type.
             | NilType a
     deriving (Functor, Show)
 
@@ -207,19 +203,17 @@ instance Annotated Type where
     ann (BoolType a)    = a
     ann (CharType a)    = a
     ann (IntType a)     = a
-    ann (ListType a _)  = a
     ann (NilType a)     = a
 
 instance Eq (Type a) where
     (==) = (==) `on` simp
 
 instance Simplifiable (Type a) Simp.Type where
-    simp (AnyType _)        = Simp.AnyType
-    simp (BoolType _)       = Simp.BoolType
-    simp (CharType _)       = Simp.CharType
-    simp (IntType _)        = Simp.IntType
-    simp (ListType _ inner) = Simp.ListType $ simp inner
-    simp (NilType _)        = Simp.NilType
+    simp (AnyType _)    = Simp.AnyType
+    simp (BoolType _)   = Simp.BoolType
+    simp (CharType _)   = Simp.CharType
+    simp (IntType _)    = Simp.IntType
+    simp (NilType _)    = Simp.NilType
 
 instance Pretty (Type a) where
     pPrint = pPrint . simp

@@ -148,16 +148,12 @@ term :: Parser (Expr SourcePos)
 term = getPosition >>= \pos -> choice
     [ parens expr
     , ApplicationExpr pos <$> id_ <*> return []
-    , ListExpr  pos       <$> brackets (expr `sepEndBy` comma)
-    , UnaryExpr pos Len   <$> pipes expr
     , ValueExpr pos       <$> value
     ]
 
 table :: OperatorTable String () (IndentT Identity) (Expr SourcePos)
 table =
     [ [ Prefix (unaryExpr Neg "-")
-      ],
-      [ Infix (binaryExpr Acc "!!") AssocLeft
       ],
       [ Infix (binaryExpr Mul "*") AssocLeft
       , Infix (binaryExpr Div "/") AssocLeft
@@ -190,17 +186,15 @@ value = choice
     , BoolValue True  <$  reserved "true"
     , CharValue       <$> charLiteral
     , IntValue        <$> natural
-    , ListValue       <$> brackets (value `sepEndBy` comma)
     , NilValue        <$  reserved "nil"
     ] <?> "value"
 
 -- | 'Type' parser.
 type_ :: Parser (Type SourcePos)
 type_ = getPosition >>= \pos -> choice
-    [ AnyType pos <$   reserved "Any"
-    , BoolType pos <$  reserved "Bool"
-    , CharType pos <$  reserved "Char"
-    , IntType  pos <$  reserved "Int"
-    , ListType pos <$> brackets type_
-    , NilType  pos <$  reserved "Nil"
+    [ AnyType pos <$  reserved "Any"
+    , BoolType pos <$ reserved "Bool"
+    , CharType pos <$ reserved "Char"
+    , IntType  pos <$ reserved "Int"
+    , NilType  pos <$ reserved "Nil"
     ] <?> "type"

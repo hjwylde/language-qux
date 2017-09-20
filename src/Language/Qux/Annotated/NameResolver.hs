@@ -135,10 +135,6 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs)             = do
 
     return $ Ann.BinaryExpr pos op lhs' rhs'
 resolveExpr e@(Ann.CallExpr {})                         = return e
-resolveExpr (Ann.ListExpr pos elements)                 = do
-    elements' <- mapM resolveExpr elements
-
-    return $ Ann.ListExpr pos elements'
 resolveExpr (Ann.TypedExpr pos type_ expr)              = do
     expr' <- resolveExpr expr
 

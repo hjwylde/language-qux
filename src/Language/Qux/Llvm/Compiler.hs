@@ -113,15 +113,13 @@ compileStmt (WhileStmt condition stmts)             = do
         (mapM_ compileStmt stmts)
 
 compileExpr :: Expr -> StateT Builder (Reader Context) Operand
-compileExpr (TypedExpr type_ (BinaryExpr Qux.Acc lhs rhs))  = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "acc"] [lhs, rhs]))
-compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs))       = do
+compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs)) = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
 
     name <- freeUnName
 
     case op of
-        Qux.Acc -> undefined
         Qux.Mul -> mul lhsOperand rhsOperand name
         Qux.Div -> sdiv lhsOperand rhsOperand name
         Qux.Mod -> srem lhsOperand rhsOperand name
@@ -143,15 +141,12 @@ compileExpr (TypedExpr type_ (CallExpr id arguments))       = do
     call (compileType type_) (mkName $ mangle id) operands name
 
     return $ local (compileType type_) name
-compileExpr (TypedExpr type_ (ListExpr elements))           = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "new"] elements))
-compileExpr (TypedExpr type_ (UnaryExpr Len expr))          = compileExpr (TypedExpr type_ (CallExpr ["qux", "lang", "list", "len"] [expr]))
 compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
     operand <- compileExpr expr
 
     name <- freeUnName
 
     case op of
-        Len -> undefined
         Neg -> mul operand (constant $ int (-1)) name
 
     return $ local (compileType type_) name
@@ -164,13 +159,11 @@ compileValue (BoolValue True)   = true
 compileValue (BoolValue False)  = false
 compileValue (CharValue c)      = char c
 compileValue (IntValue i)       = int i
-compileValue (ListValue _)      = error "internal error: cannot compile a list as a constant"
 compileValue NilValue           = nil
 
 compileType :: Qux.Type -> Llvm.Type
-compileType AnyType         = error "internal error: cannot compile an any type"
-compileType BoolType        = boolType
-compileType CharType        = charType
-compileType IntType         = intType
-compileType (ListType _)    = listType
-compileType NilType         = nilType
+compileType AnyType     = error "internal error: cannot compile an any type"
+compileType BoolType    = boolType
+compileType CharType    = charType
+compileType IntType     = intType
+compileType NilType     = nilType

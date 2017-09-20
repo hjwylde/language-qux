@@ -33,7 +33,6 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
 
-import           Data.List
 import           Data.Map   (Map)
 import qualified Data.Map   as Map
 import           Data.Maybe
@@ -98,7 +97,6 @@ resolveExpr (Ann.BinaryExpr pos op lhs rhs) = do
     rhs' <- resolveExpr rhs
 
     let type_ = case op of
-            Acc -> let (ListType inner) = extractType lhs' in inner
             Mul -> IntType
             Div -> IntType
             Mod -> IntType
@@ -118,13 +116,6 @@ resolveExpr (Ann.CallExpr pos id arguments) = views functions (Map.lookup $ map 
         arguments_ <- mapM resolveExpr arguments
 
         return $ Ann.TypedExpr pos (fst $ last type_) (Ann.CallExpr pos id arguments_))
-resolveExpr (Ann.ListExpr pos elements)     = do
-    elements' <- mapM resolveExpr elements
-
-    let types = map extractType elements'
-    let elementType = if length (nub types) == 1 then head types else AnyType
-
-    return $ Ann.TypedExpr pos (ListType elementType) (Ann.ListExpr pos elements')
 resolveExpr e@(Ann.TypedExpr {})            = return e
 resolveExpr (Ann.UnaryExpr pos op expr)     = do
     expr' <- resolveExpr expr
@@ -135,15 +126,10 @@ resolveExpr e@(Ann.VariableExpr pos name)   = gets (fromJust . Map.lookup (simp 
 
 -- | Resolves the type of a value.
 resolveValue :: Value -> Type
-resolveValue (BoolValue _)          = BoolType
-resolveValue (CharValue _)          = CharType
-resolveValue (IntValue _)           = IntType
-resolveValue (ListValue elements)
-    | length (nub types) == 1   = ListType $ head types
-    | otherwise                 = ListType AnyType
-    where
-        types = map resolveValue elements
-resolveValue NilValue               = NilType
+resolveValue (BoolValue _)  = BoolType
+resolveValue (CharValue _)  = CharType
+resolveValue (IntValue _)   = IntType
+resolveValue NilValue       = NilType
 
 -- | Extracts the type from a 'Ann.TypedExpr'.
 --   If the expression isn't an 'Ann.TypedExpr', an error is raised.

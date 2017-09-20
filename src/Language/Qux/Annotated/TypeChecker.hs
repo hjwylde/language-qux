@@ -97,7 +97,6 @@ checkStmt (Ann.WhileStmt _ condition stmts)               = do
 -- | Type checks an expression.
 checkExpr :: Ann.Expr SourcePos -> StateT Locals Check Type
 checkExpr (Ann.TypedExpr _ type_ (Ann.BinaryExpr _ op lhs rhs))
-    | op `elem` [Acc]                       = expectExpr_ lhs [ListType type_] >> expectExpr_ rhs [IntType] >> return type_
     | op `elem` [Mul, Div, Mod, Add, Sub]   = expectExpr_ lhs [type_] >> expectExpr rhs [type_]
     | op `elem` [Lt, Lte, Gt, Gte]          = expectExpr_ lhs [IntType] >> expectExpr_ rhs [IntType] >> return type_
     | op `elem` [Eq, Neq]                   = checkExpr lhs >>= expectExpr rhs . (:[]) >> return type_
@@ -112,14 +111,7 @@ checkExpr (Ann.TypedExpr _ type_ (Ann.CallExpr pos id arguments))   = views func
         when (length expected /= length arguments) $ tell [InvalidFunctionCall pos (length arguments) (length expected)]
 
         return type_)
-checkExpr (Ann.TypedExpr _ type_ (Ann.ListExpr _ elements))         = do
-    let (ListType inner) = type_
-
-    mapM_ (`expectExpr` [inner]) elements
-
-    return type_
 checkExpr (Ann.TypedExpr _ type_ (Ann.UnaryExpr _ op expr))
-    | op `elem` [Len]   = expectExpr_ expr [ListType AnyType] >> return type_
     | op `elem` [Neg]   = expectExpr expr [type_]
     | otherwise         = error $ "internal error: " ++ show op ++ " not implemented"
 checkExpr (Ann.TypedExpr _ type_ (Ann.ValueExpr {}))                = return type_
@@ -144,14 +136,12 @@ expectType received expects
         return $ simp received
 
 isSubtype :: Type -> Type -> Bool
-isSubtype _ AnyType                             = True
-isSubtype (ListType first) (ListType second)    = isSubtype first second
-isSubtype first second                          = first == second
+isSubtype _ AnyType     = True
+isSubtype first second  = first == second
 
 attach :: SourcePos -> Type -> Ann.Type SourcePos
-attach pos AnyType          = Ann.AnyType pos
-attach pos BoolType         = Ann.BoolType pos
-attach pos CharType         = Ann.CharType pos
-attach pos IntType          = Ann.IntType  pos
-attach pos (ListType inner) = Ann.ListType pos (attach undefined inner)
-attach pos NilType          = Ann.NilType  pos
+attach pos AnyType  = Ann.AnyType pos
+attach pos BoolType = Ann.BoolType pos
+attach pos CharType = Ann.CharType pos
+attach pos IntType  = Ann.IntType  pos
+attach pos NilType  = Ann.NilType  pos

@@ -27,7 +27,6 @@ import LLVM.AST.Constant as Constant hiding (exact, nsw, nuw, operand0, operand1
 import LLVM.AST.Type as Type
 import LLVM.AST.IntegerPredicate
 
-import Language.Qux.Syntax hiding (Type)
 import Language.Qux.Llvm.Builder
 
 -- Definitions
@@ -224,9 +223,6 @@ charType = i8
 
 intType :: Type
 intType = i32
-
-listType :: Type
-listType = NamedTypeReference . mkName $ mangle ["qux", "lang", "list", "List"]
 
 nilType :: Type
 nilType = StructureType
