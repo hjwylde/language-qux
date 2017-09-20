@@ -28,6 +28,8 @@ import Data.Typeable
 import Language.Qux.Annotated.Parser
 import Language.Qux.Syntax
 
+import Text.PrettyPrint.Extra
+
 -- | An exception that has a source position and message.
 class CompilerException e where
     -- | Extracts the source position from the exception.

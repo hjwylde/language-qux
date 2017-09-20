@@ -20,14 +20,12 @@ module Language.Qux.Syntax (
 
     -- ** Utility
     qualify, mangle,
-
-    -- ** Rendering
-    pShow,
 ) where
 
 import Data.List.Extra
 
 import Text.PrettyPrint
+import Text.PrettyPrint.Extra
 import Text.PrettyPrint.HughesPJClass
 
 -- | An identifier. Identifiers should match '[a-z_][a-zA-Z0-9_']*'.
@@ -39,7 +37,7 @@ data Program = Program [Id] [Decl]
 
 instance Pretty Program where
     pPrint (Program module_ decls) = vcat . map ($+$ text "") $
-        (text "module" <+> hcat (punctuate (char '.') (map text module_))) : map pPrint decls
+        (text "module" <+> hcat (punctuate dot (map text module_))) : map pPrint decls
 
 -- | A declaration.
 data Decl   = FunctionDecl [Attribute] Id [(Type, Id)] [Stmt]   -- ^ A name, list of ('Type', 'Id') parameters and statements.
@@ -52,16 +50,16 @@ instance Pretty Decl where
     pPrint (FunctionDecl attrs name type_ [])       = declarationDoc attrs name type_
     pPrint (FunctionDecl attrs name type_ stmts)    = vcat
         [ declarationDoc attrs name type_ <> colon
-        , nest 4 $ block stmts
+        , block stmts
         ]
-    pPrint (ImportDecl id)                          = text "import" <+> hcat (punctuate (char '.') (map text id))
+    pPrint (ImportDecl id)                          = text "import" <+> hcat (punctuate dot (map text id))
     pPrint (TypeDecl attrs name)                    = text "type" <+> hsep (map pPrint attrs) <+> text name
 
 declarationDoc :: [Attribute] -> Id -> [(Type, Id)] -> Doc
-declarationDoc attrs name type_ = hsep $ map pPrint attrs ++ [text name, text "::", functionTypeDoc]
+declarationDoc attrs name type_ = hsep $ map pPrint attrs ++ [text name, dcolon, functionTypeDoc]
     where
         functionTypeDoc = fsep $ punctuate
-            (text " ->")
+            (space <> rarrow)
             [pPrint t <+> if p == "@" then empty else text p | (t, p) <- type_]
 
 -- | A declaration attribute.
@@ -80,14 +78,14 @@ data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false b
 instance Pretty Stmt where
     pPrint (IfStmt condition trueStmts falseStmts)  = vcat
         [ text "if" <+> pPrint condition <> colon
-        , nest 4 $ block trueStmts
-        , if null falseStmts then empty else text "else:"
-        , nest 4 $ block falseStmts
+        , block trueStmts
+        , if null falseStmts then empty else text "else" <> colon
+        , block falseStmts
         ]
     pPrint (ReturnStmt expr)                        = text "return" <+> pPrint expr
     pPrint (WhileStmt condition stmts)              = vcat
         [ text "while" <+> pPrint condition <> colon
-        , nest 4 $ block stmts
+        , block stmts
         ]
 
 -- | A complex expression.
@@ -127,24 +125,24 @@ data BinaryOp   = Mul -- ^ Multiplicaiton.
     deriving (Eq, Show)
 
 instance Pretty BinaryOp where
-    pPrint Mul = text "*"
-    pPrint Div = text "/"
-    pPrint Mod = text "%"
-    pPrint Add = text "+"
-    pPrint Sub = text "-"
-    pPrint Lt  = text "<"
-    pPrint Lte = text "<="
-    pPrint Gt  = text ">"
-    pPrint Gte = text ">="
-    pPrint Eq  = text "=="
-    pPrint Neq = text "!="
+    pPrint Mul = asterisk
+    pPrint Div = fslash
+    pPrint Mod = percent
+    pPrint Add = plus
+    pPrint Sub = hyphen
+    pPrint Lt  = langle
+    pPrint Lte = langle <> equals
+    pPrint Gt  = rangle
+    pPrint Gte = rangle <> equals
+    pPrint Eq  = dequals
+    pPrint Neq = bang <> equals
 
 -- | A unary operator.
 data UnaryOp = Neg -- ^ Negation.
     deriving (Eq, Show)
 
 instance Pretty UnaryOp where
-    pPrint Neg = text "-"
+    pPrint Neg = hyphen
 
 -- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
@@ -157,7 +155,7 @@ instance Pretty Value where
     pPrint (BoolValue bool) = text $ lower (show bool)
     pPrint (IntValue int)   = text $ show int
     pPrint NilValue         = text "nil"
-    pPrint (StrValue str)   = char '"' <> text str <> char '"'
+    pPrint (StrValue str)   = doubleQuotes $ text str
 
 -- | A type.
 data Type   = AnyType
@@ -182,9 +180,5 @@ qualify = intercalate "."
 mangle :: [Id] -> Id
 mangle = intercalate "_"
 
--- | @pShow a@ pretty prints @a@ using a rending mode of 'OneLineMode'.
-pShow :: Pretty a => a -> String
-pShow = renderStyle (style { mode = OneLineMode }) . pPrint
-
 block :: [Stmt] -> Doc
-block = vcat . map pPrint
+block = nest 4 . vcat . map pPrint

@@ -35,16 +35,13 @@ module Language.Qux.Annotated.Syntax (
 
     -- ** Utility
     qualify, mangle,
-
-    -- ** Rendering
-    pShow,
 ) where
 
 import Data.Function
 import Data.List
 import Data.Tuple.Extra
 
-import           Language.Qux.Syntax (BinaryOp (..), UnaryOp (..), Value (..), pShow)
+import           Language.Qux.Syntax (BinaryOp (..), UnaryOp (..), Value (..))
 import qualified Language.Qux.Syntax as Simp
 
 import Text.PrettyPrint.HughesPJClass

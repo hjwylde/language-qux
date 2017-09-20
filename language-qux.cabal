@@ -43,6 +43,7 @@ library
         Language.Qux.Llvm.Builder
         Language.Qux.Llvm.Generator
         Paths_language_qux
+        Text.PrettyPrint.Extra
 
     default-language: Haskell2010
     other-extensions:
