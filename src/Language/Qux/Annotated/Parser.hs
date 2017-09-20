@@ -29,7 +29,7 @@ import Data.Functor.Identity
 import Language.Qux.Annotated.Syntax
 import Language.Qux.Lexer
 
-import Text.Parsec        hiding (State, parse)
+import Text.Parsec        hiding (State, parse, string)
 import Text.Parsec.Expr
 import Text.Parsec.Indent
 
@@ -57,7 +57,7 @@ program = do
 
     whiteSpace
     checkIndent
-    reserved "module"
+    keyword "module"
     module_ <- (same >> id_) `sepBy1` dot
     checkIndent
     decls <- block decl
@@ -83,23 +83,23 @@ decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
 
         externalFunctionDecl pos attrs = do
             name <- id_
-            symbol_ "::"
-            parameterTypes <- withPos $ try (fmap (,) type_ <+/> return (Id pos "_")) `endBy` rightArrow
+            dcolon
+            parameterTypes <- withPos $ try (fmap (,) type_ <+/> return (Id pos "_")) `endBy` rarrow
             returnType <- type_
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) []
 
         functionDecl pos attrs = do
             name <- id_
-            symbol_ "::"
-            parameterTypes <- withPos $ try (fmap (,) type_ <+/> id_) `endBy` rightArrow
+            dcolon
+            parameterTypes <- withPos $ try (fmap (,) type_ <+/> id_) `endBy` rarrow
             returnType <- type_
             stmts <- colon >> indented >> block stmt
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
 
         typeDecl pos attrs = do
-            reserved "type"
+            keyword "type"
             name <- typeId
 
             return $ TypeDecl pos attrs name
@@ -107,14 +107,14 @@ decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
         importDecl = do
             pos <- getPosition
 
-            reserved "import"
+            keyword "import"
             id <- id_ `sepBy1` dot
 
             return $ ImportDecl pos id
 
 -- | 'Attribute' parser.
 attribute :: Parser (Attribute SourcePos)
-attribute = getPosition >>= \pos -> External pos <$ reserved "external"
+attribute = getPosition >>= \pos -> External pos <$ keyword "external"
 
 -- | 'Stmt' parser.
 stmt :: Parser (Stmt SourcePos)
@@ -123,19 +123,19 @@ stmt = choice [ifStmt, returnStmt, whileStmt] <?> "statement"
         ifStmt      = do
             pos <- getPosition
 
-            reserved "if"
+            keyword "if"
             condition <- expr
             colon
             indented
             trueStmts <- block stmt
-            falseStmts <- option [] (checkIndent >> withBlock' (do { reserved "else"; colon }) stmt)
+            falseStmts <- option [] (checkIndent >> withBlock' (do { keyword "else"; colon }) stmt)
 
             return $ IfStmt pos condition trueStmts falseStmts
-        returnStmt  = ReturnStmt <$> getPosition <* reserved "return" <*> expr
+        returnStmt  = ReturnStmt <$> getPosition <* keyword "return" <*> expr
         whileStmt   = do
             pos <- getPosition
 
-            withBlock (WhileStmt pos) (reserved "while" *> expr <* colon) stmt
+            withBlock (WhileStmt pos) (keyword "while" *> expr <* colon) stmt
 
 -- | 'Expr' parser.
 expr :: Parser (Expr SourcePos)
@@ -182,19 +182,19 @@ unaryExpr op sym = getPosition >>= \pos -> UnaryExpr pos op <$ operator sym
 --   A value doesn't have a source position attached as this can be retrieved from a 'ValueExpr'.
 value :: Parser Value
 value = choice
-    [ BoolValue False <$  reserved "false"
-    , BoolValue True  <$  reserved "true"
+    [ BoolValue False <$  keyword "false"
+    , BoolValue True  <$  keyword "true"
     , IntValue        <$> natural
-    , NilValue        <$  reserved "nil"
-    , StrValue        <$> stringLiteral
+    , NilValue        <$  keyword "nil"
+    , StrValue        <$> string
     ] <?> "value"
 
 -- | 'Type' parser.
 type_ :: Parser (Type SourcePos)
 type_ = getPosition >>= \pos -> choice
-    [ AnyType pos <$  reserved "Any"
-    , BoolType pos <$ reserved "Bool"
-    , IntType  pos <$ reserved "Int"
-    , NilType  pos <$ reserved "Nil"
-    , StrType pos <$  reserved "Str"
+    [ AnyType pos <$  keyword "Any"
+    , BoolType pos <$ keyword "Bool"
+    , IntType  pos <$ keyword "Int"
+    , NilType  pos <$ keyword "Nil"
+    , StrType pos <$  keyword "Str"
     ] <?> "type"
