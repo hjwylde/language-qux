@@ -9,6 +9,8 @@ Maintainer  : hjwylde@gmail.com
 A compiler that takes a 'Program' and outputs a LLVM 'Module'.
 -}
 
+{-# LANGUAGE FlexibleContexts #-}
+
 module Language.Qux.Llvm.Compiler (
     -- * Global context
     Context(..),
@@ -41,7 +43,7 @@ import Prelude hiding (EQ)
 -- | Compiles the program into a LLVM 'Module'.
 --   Generally speaking, compilation is done using the defaults.
 --   Any exceptions to this will be clearly noted.
-compileProgram :: Program -> Reader Context Module
+compileProgram :: MonadReader Context m => Program -> m Module
 compileProgram (Program module_ decls) = do
     importedFunctions' <- views (imported . functions) (map (\(id, type_) -> GlobalDefinition functionDefaults
         { Global.name       = mkName $ mangle id
@@ -83,7 +85,7 @@ compileProgram (Program module_ decls) = do
             ]
         }
 
-compileDecl :: Decl -> Reader Context Definition
+compileDecl :: MonadReader Context m => Decl -> m Definition
 compileDecl (FunctionDecl _ name type_ stmts)   = do
     module_'    <- view module_
     builder     <- execStateT (mapM_ compileStmt stmts) newFunctionBuilder
@@ -97,7 +99,7 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
 
-compileStmt :: Stmt -> StateT FunctionBuilder (Reader Context) ()
+compileStmt :: (MonadState FunctionBuilder m, MonadReader Context m) => Stmt -> m ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do
     operand <- compileExpr condition
 
@@ -113,7 +115,7 @@ compileStmt (WhileStmt condition stmts)             = do
     while (compileExpr condition)
         (mapM_ compileStmt stmts)
 
-compileExpr :: Expr -> StateT FunctionBuilder (Reader Context) Operand
+compileExpr :: (MonadState FunctionBuilder m, MonadReader Context m) => Expr -> m Operand
 compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs)) = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
@@ -155,7 +157,7 @@ compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant 
 compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (mkName name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
-compileExpr_ :: Expr -> StateT FunctionBuilder (Reader Context) ()
+compileExpr_ :: (MonadState FunctionBuilder m, MonadReader Context m) => Expr -> m ()
 compileExpr_ = void <$> compileExpr
 
 compileValue :: Value -> Constant
