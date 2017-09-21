@@ -47,7 +47,7 @@ global type_ = constant . GlobalReference type_
 
 -- Control flow
 
-if_ :: MonadState Builder m => Operand -> m () -> m () -> m ()
+if_ :: MonadState FunctionBuilder m => Operand -> m () -> m () -> m ()
 if_ operand mTrueInstrs mFalseInstrs = do
     thenLabel <- freeUnName
     elseLabel <- freeUnName
@@ -70,7 +70,7 @@ if_ operand mTrueInstrs mFalseInstrs = do
     addBlock exitLabel >> setBlock exitLabel
     unreachable
 
-while :: MonadState Builder m => m Operand -> m () -> m ()
+while :: MonadState FunctionBuilder m => m Operand -> m () -> m ()
 while mOperand mInstrs = do
     whileLabel  <- freeUnName
     loopLabel   <- freeUnName
@@ -93,7 +93,7 @@ while mOperand mInstrs = do
 
 -- Instructions
 
-add :: MonadState Builder m => Operand -> Operand -> Name -> m ()
+add :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
 add lhsOperand rhsOperand name = append $ name := Llvm.Add
     { nsw       = False
     , nuw       = False
@@ -102,7 +102,7 @@ add lhsOperand rhsOperand name = append $ name := Llvm.Add
     , metadata  = []
     }
 
-call :: MonadState Builder m => Type -> Name -> [Operand] -> Name -> m ()
+call :: MonadState FunctionBuilder m => Type -> Name -> [Operand] -> Name -> m ()
 call type_ function operands name = append $ name := Call
     { tailCallKind          = Nothing
     , callingConvention     = C
@@ -113,7 +113,7 @@ call type_ function operands name = append $ name := Call
     , metadata              = []
     }
 
-icmp :: MonadState Builder m => IntegerPredicate -> Operand -> Operand -> Name -> m ()
+icmp :: MonadState FunctionBuilder m => IntegerPredicate -> Operand -> Operand -> Name -> m ()
 icmp predicate lhsOperand rhsOperand name = append $ name := Llvm.ICmp
     { iPredicate    = predicate
     , operand0      = lhsOperand
@@ -121,7 +121,7 @@ icmp predicate lhsOperand rhsOperand name = append $ name := Llvm.ICmp
     , metadata      = []
     }
 
-mul :: MonadState Builder m => Operand -> Operand -> Name -> m ()
+mul :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
 mul lhsOperand rhsOperand name = append $ name := Llvm.Mul
     { nsw       = False
     , nuw       = False
@@ -130,7 +130,7 @@ mul lhsOperand rhsOperand name = append $ name := Llvm.Mul
     , metadata  = []
     }
 
-sdiv :: MonadState Builder m => Operand -> Operand -> Name -> m ()
+sdiv :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
 sdiv lhsOperand rhsOperand name = append $ name := Llvm.SDiv
     { exact     = False
     , operand0  = lhsOperand
@@ -138,14 +138,14 @@ sdiv lhsOperand rhsOperand name = append $ name := Llvm.SDiv
     , metadata  = []
     }
 
-srem :: MonadState Builder m => Operand -> Operand -> Name -> m ()
+srem :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
 srem lhsOperand rhsOperand name = append $ name := Llvm.SRem
     { operand0 = lhsOperand
     , operand1 = rhsOperand
     , metadata = []
     }
 
-sub :: MonadState Builder m => Operand -> Operand -> Name -> m ()
+sub :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
 sub lhsOperand rhsOperand name = append $ name := Llvm.Sub
     { nsw       = False
     , nuw       = False
@@ -156,13 +156,13 @@ sub lhsOperand rhsOperand name = append $ name := Llvm.Sub
 
 -- Terminators
 
-br :: MonadState Builder m => Name -> m ()
+br :: MonadState FunctionBuilder m => Name -> m ()
 br label = terminate $ Do Br
     { dest      = label
     , metadata' = []
     }
 
-condBr :: MonadState Builder m => Operand -> Name -> Name -> m ()
+condBr :: MonadState FunctionBuilder m => Operand -> Name -> Name -> m ()
 condBr operand trueLabel falseLabel = terminate $ Do CondBr
     { condition = operand
     , trueDest  = trueLabel
@@ -170,13 +170,13 @@ condBr operand trueLabel falseLabel = terminate $ Do CondBr
     , metadata' = []
     }
 
-ret :: MonadState Builder m => Operand -> m ()
+ret :: MonadState FunctionBuilder m => Operand -> m ()
 ret operand = terminate $ Do Ret
     { returnOperand = Just operand
     , metadata'     = []
     }
 
-unreachable :: MonadState Builder m => m ()
+unreachable :: MonadState FunctionBuilder m => m ()
 unreachable = terminate $ Do Unreachable { metadata' = [] }
 
 -- Constants
@@ -206,8 +206,8 @@ nil = Struct
     , memberValues      = []
     }
 
-string :: String -> Constant
-string _ = undefined
+str :: String -> Constant
+str _ = undefined
 
 -- Types
 

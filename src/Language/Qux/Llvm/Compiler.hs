@@ -85,27 +85,26 @@ compileProgram (Program module_ decls) = do
 
 compileDecl :: Decl -> Reader Context Definition
 compileDecl (FunctionDecl _ name type_ stmts)   = do
-    module_'        <- view module_
-    blockBuilder    <- execStateT (mapM_ compileStmt stmts) initialBuilder
+    module_'    <- view module_
+    builder     <- execStateT (mapM_ compileStmt stmts) newFunctionBuilder
 
     return $ GlobalDefinition functionDefaults
         { Global.name       = mkName $ mangle (module_' ++ [name])
         , Global.returnType = compileType $ fst (last type_)
         , Global.parameters = ([Parameter (compileType t) (mkName p) [] | (t, p) <- init type_], False)
-        , basicBlocks       = map (\b -> BasicBlock (b ^. Builder.name) (b ^. stack) (fromJust $ b ^. term)) (Map.elems $ blockBuilder ^. blocks)
+        , basicBlocks       = map (\b -> BasicBlock (b ^. Builder.name) (b ^. stack) (fromJust $ b ^. term)) (Map.elems $ builder ^. blocks)
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
 
-compileStmt :: Stmt -> StateT Builder (Reader Context) ()
+compileStmt :: Stmt -> StateT FunctionBuilder (Reader Context) ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do
     operand <- compileExpr condition
 
     if_ operand
         (mapM_ compileStmt trueStmts)
         (mapM_ compileStmt falseStmts)
-compileStmt (CallStmt expr)                         = do
-    compileExpr_ expr
+compileStmt (CallStmt expr)                         = compileExpr_ expr
 compileStmt (ReturnStmt expr)                       = do
     operand <- compileExpr expr
 
@@ -114,7 +113,7 @@ compileStmt (WhileStmt condition stmts)             = do
     while (compileExpr condition)
         (mapM_ compileStmt stmts)
 
-compileExpr :: Expr -> StateT Builder (Reader Context) Operand
+compileExpr :: Expr -> StateT FunctionBuilder (Reader Context) Operand
 compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs)) = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
@@ -156,7 +155,7 @@ compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant 
 compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (mkName name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
-compileExpr_ :: Expr -> StateT Builder (Reader Context) ()
+compileExpr_ :: Expr -> StateT FunctionBuilder (Reader Context) ()
 compileExpr_ = void <$> compileExpr
 
 compileValue :: Value -> Constant
@@ -164,7 +163,7 @@ compileValue (BoolValue True)   = true
 compileValue (BoolValue False)  = false
 compileValue (IntValue i)       = int i
 compileValue NilValue           = nil
-compileValue (StrValue str)     = string str
+compileValue (StrValue s)       = str s
 
 compileType :: Qux.Type -> Llvm.Type
 compileType AnyType     = error "internal error: cannot compile an any type"

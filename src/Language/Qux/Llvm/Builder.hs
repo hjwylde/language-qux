@@ -23,7 +23,7 @@ import Data.Map as Map
 
 import LLVM.AST
 
-data Builder = Builder
+data FunctionBuilder = FunctionBuilder
     { _currentBlockName :: Name
     , _blocks           :: Map Name BlockBuilder
     , _counter          :: Word
@@ -37,18 +37,18 @@ data BlockBuilder = BlockBuilder
     }
     deriving (Eq, Show)
 
-makeLenses ''Builder
+makeLenses ''FunctionBuilder
 
 makeLenses ''BlockBuilder
 
-initialBuilder :: Builder
-initialBuilder = Builder
-    { _currentBlockName = name'
-    , _blocks           = Map.singleton name' (newBlockBuilder name')
+newFunctionBuilder :: FunctionBuilder
+newFunctionBuilder = FunctionBuilder
+    { _currentBlockName = name
+    , _blocks           = Map.singleton name (newBlockBuilder name)
     , _counter          = 1
     }
     where
-        name' = UnName 0
+        name = UnName 0
 
 defaultBlockBuilder :: BlockBuilder
 defaultBlockBuilder = BlockBuilder
@@ -60,26 +60,26 @@ defaultBlockBuilder = BlockBuilder
 newBlockBuilder :: Name -> BlockBuilder
 newBlockBuilder name' = defaultBlockBuilder & name .~ name'
 
-getBlock :: MonadState Builder m => m Name
+getBlock :: MonadState FunctionBuilder m => m Name
 getBlock = use currentBlockName
 
-setBlock :: MonadState Builder m => Name -> m ()
+setBlock :: MonadState FunctionBuilder m => Name -> m ()
 setBlock name = modify $ \s -> s & currentBlockName .~ name
 
-addBlock :: MonadState Builder m => Name -> m ()
+addBlock :: MonadState FunctionBuilder m => Name -> m ()
 addBlock name' = modify $ \s -> s & blocks %~ Map.insert name' (newBlockBuilder name')
 
-modifyBlock :: MonadState Builder m => (BlockBuilder -> BlockBuilder) -> m ()
+modifyBlock :: MonadState FunctionBuilder m => (BlockBuilder -> BlockBuilder) -> m ()
 modifyBlock f = currentBlock >>= \c -> modify (\s -> s & blocks %~ Map.insert (c ^. name) (f c))
 
-currentBlock :: MonadState Builder m => m BlockBuilder
+currentBlock :: MonadState FunctionBuilder m => m BlockBuilder
 currentBlock = getBlock >>= \name -> uses blocks (flip (Map.!) name)
 
-append :: MonadState Builder m => Named Instruction -> m ()
+append :: MonadState FunctionBuilder m => Named Instruction -> m ()
 append instr = modifyBlock $ \b -> b & stack %~ (`snoc` instr)
 
-terminate :: MonadState Builder m => Named Terminator -> m ()
+terminate :: MonadState FunctionBuilder m => Named Terminator -> m ()
 terminate term' = modifyBlock $ \b -> b & term .~ Just term'
 
-freeUnName :: MonadState Builder m => m Name
+freeUnName :: MonadState FunctionBuilder m => m Name
 freeUnName = UnName <$> use counter <* (counter += 1)
