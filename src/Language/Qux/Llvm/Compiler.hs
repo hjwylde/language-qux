@@ -6,7 +6,7 @@ Copyright   : (c) Henry J. Wylde, 2015
 License     : BSD3
 Maintainer  : hjwylde@gmail.com
 
-A compiler that takes a 'Program' and outputs a LLVM 'Module'.
+A compiler that takes a 'Program' and outputs an LLVM 'Module'.
 -}
 
 {-# LANGUAGE FlexibleContexts #-}
@@ -34,14 +34,14 @@ import Language.Qux.Llvm.Builder   as Builder
 import Language.Qux.Llvm.Generator
 import Language.Qux.Syntax         as Qux
 
-import LLVM.AST                  as Llvm
+import LLVM.AST                  as Llvm hiding (function)
 import LLVM.AST.Constant         as Constant hiding (exact, nsw, nuw, operand0, operand1)
 import LLVM.AST.Global           as Global
 import LLVM.AST.IntegerPredicate
 
 import Prelude hiding (EQ)
 
--- | Compiles the program into a LLVM 'Module'.
+-- | Compiles the program into an LLVM 'Module'.
 --   Generally speaking, compilation is done using the defaults.
 --   Any exceptions to this will be clearly noted.
 compileProgram :: MonadReader Context m => Program -> m Module
@@ -91,12 +91,12 @@ compileDecl (FunctionDecl _ name type_ stmts)   = do
     module_'    <- view module_
     builder     <- execStateT (mapM_ compileStmt stmts >> commitCurrentBlock) newFunctionBuilder
 
-    return $ GlobalDefinition functionDefaults
-        { Global.name       = mkName $ mangle (module_' ++ [name])
-        , Global.returnType = compileType $ fst (last type_)
-        , Global.parameters = ([Parameter (compileType t) (mkName p) [] | (t, p) <- init type_], False)
-        , basicBlocks       = builder ^. blocks
-        }
+    let name' = mkName $ mangle (module_' ++ [name])
+    let type_' = compileType $ fst (last type_)
+    let parameters = [(compileType type_', mkName name) | (type_', name) <- init type_]
+    let blocks' = builder ^. blocks
+
+    return $ function name' type_' parameters blocks'
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
 

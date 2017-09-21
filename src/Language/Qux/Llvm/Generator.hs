@@ -23,14 +23,19 @@ import LLVM.AST.CallingConvention
 import LLVM.AST.Constant as Constant hiding (exact, nsw, nuw, operand0, operand1, iPredicate)
 import LLVM.AST.Type as Type
 import LLVM.AST.IntegerPredicate
+import LLVM.AST.Global           as Global hiding (callingConvention, functionAttributes, returnAttributes)
 
 import Language.Qux.Llvm.Builder
 
 -- Definitions
 
---function :: 
-
---type :: TypeDefinition
+function :: Name -> Type -> [(Type, Name)] -> [BasicBlock] -> Definition
+function name type_ parameters blocks = GlobalDefinition functionDefaults
+        { Global.name       = name
+        , Global.returnType = type_
+        , Global.parameters = ([Parameter type_ name [] | (type_, name) <- parameters], False)
+        , basicBlocks       = blocks
+        }
 
 -- Operands
 
@@ -123,7 +128,7 @@ call type_ function operands name = append $ name := Call
     { tailCallKind          = Nothing
     , callingConvention     = C
     , returnAttributes      = []
-    , function              = Right $ global type_ function
+    , Llvm.function         = Right $ global type_ function
     , arguments             = [(op, []) | op <- operands]
     , functionAttributes    = []
     , metadata              = []
