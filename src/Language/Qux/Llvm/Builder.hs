@@ -18,22 +18,22 @@ module Language.Qux.Llvm.Builder where
 
 import Control.Lens
 import Control.Monad.State
+import Control.Monad.Writer
 
-import Data.Map as Map
+import Data.Maybe
 
 import LLVM.AST
 
 data FunctionBuilder = FunctionBuilder
-    { _currentBlockName :: Name
-    , _blocks           :: Map Name BlockBuilder
-    , _counter          :: Word
+    { _currentBlock :: (Name, BlockBuilder)
+    , _blocks       :: [BasicBlock]
+    , _counter      :: Word
     }
     deriving (Eq, Show)
 
 data BlockBuilder = BlockBuilder
-    { _name     :: Name
-    , _stack    :: [Named Instruction]
-    , _term     :: Maybe (Named Terminator)
+    { _stack    :: [Named Instruction]
+    , _term     :: First (Named Terminator)
     }
     deriving (Eq, Show)
 
@@ -41,45 +41,53 @@ makeLenses ''FunctionBuilder
 
 makeLenses ''BlockBuilder
 
+instance Monoid BlockBuilder where
+    mempty = BlockBuilder mempty mempty
+
+    mappend a b = a
+        & stack <>~ b ^. stack
+        & term <>~ b ^. term
+
 newFunctionBuilder :: FunctionBuilder
 newFunctionBuilder = FunctionBuilder
-    { _currentBlockName = name
-    , _blocks           = Map.singleton name (newBlockBuilder name)
-    , _counter          = 1
+    { _currentBlock = (name, mempty)
+    , _blocks       = []
+    , _counter      = 1
     }
     where
         name = UnName 0
 
-defaultBlockBuilder :: BlockBuilder
-defaultBlockBuilder = BlockBuilder
-    { _name     = error "no block name set"
-    , _stack    = []
-    , _term     = Nothing
-    }
+buildBlock :: Name -> BlockBuilder -> BasicBlock
+buildBlock name (BlockBuilder stack term) = BasicBlock name stack (fromJust $ getFirst term)
 
-newBlockBuilder :: Name -> BlockBuilder
-newBlockBuilder name' = defaultBlockBuilder & name .~ name'
+withCurrentBlock :: MonadState FunctionBuilder m => WriterT BlockBuilder m a -> m a
+withCurrentBlock instrs = do
+    (result, instrs') <- runWriterT instrs
 
-getBlock :: MonadState FunctionBuilder m => m Name
-getBlock = use currentBlockName
+    currentBlock . _2 <>= instrs'
 
-setBlock :: MonadState FunctionBuilder m => Name -> m ()
-setBlock name = modify $ \s -> s & currentBlockName .~ name
+    return result
 
-addBlock :: MonadState FunctionBuilder m => Name -> m ()
-addBlock name' = modify $ \s -> s & blocks %~ Map.insert name' (newBlockBuilder name')
+commitCurrentBlock :: MonadState FunctionBuilder m => m ()
+commitCurrentBlock = do
+    basicBlock <- uses currentBlock $ uncurry buildBlock
 
-modifyBlock :: MonadState FunctionBuilder m => (BlockBuilder -> BlockBuilder) -> m ()
-modifyBlock f = currentBlock >>= \c -> modify (\s -> s & blocks %~ Map.insert (c ^. name) (f c))
+    blocks <>= [basicBlock]
 
-currentBlock :: MonadState FunctionBuilder m => m BlockBuilder
-currentBlock = getBlock >>= \name -> uses blocks (flip (Map.!) name)
+    name <- freeUnName
+    currentBlock .= (name, mempty)
 
-append :: MonadState FunctionBuilder m => Named Instruction -> m ()
-append instr = modifyBlock $ \b -> b & stack %~ (`snoc` instr)
+createNewBlock :: MonadState FunctionBuilder m => Name -> m ()
+createNewBlock name = currentBlock .= (name, mempty)
 
-terminate :: MonadState FunctionBuilder m => Named Terminator -> m ()
-terminate term' = modifyBlock $ \b -> b & term .~ Just term'
+withNewBlock :: MonadState FunctionBuilder m => Name -> WriterT BlockBuilder m a -> m a
+withNewBlock name instrs = createNewBlock name >> withCurrentBlock instrs
+
+append :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Named Instruction -> m ()
+append instr = scribe stack [instr]
+
+terminate :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Named Terminator -> m ()
+terminate instr = scribe term (First $ Just instr)
 
 freeUnName :: MonadState FunctionBuilder m => m Name
 freeUnName = UnName <$> use counter <* (counter += 1)

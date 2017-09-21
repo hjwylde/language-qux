@@ -23,6 +23,7 @@ module Language.Qux.Llvm.Compiler (
 import Control.Lens         hiding (Context)
 import Control.Monad.Reader hiding (local)
 import Control.Monad.State
+import Control.Monad.Writer
 
 import qualified Data.Map    as Map
 import           Data.Maybe
@@ -88,34 +89,31 @@ compileProgram (Program module_ decls) = do
 compileDecl :: MonadReader Context m => Decl -> m Definition
 compileDecl (FunctionDecl _ name type_ stmts)   = do
     module_'    <- view module_
-    builder     <- execStateT (mapM_ compileStmt stmts) newFunctionBuilder
+    builder     <- execStateT (mapM_ compileStmt stmts >> commitCurrentBlock) newFunctionBuilder
 
     return $ GlobalDefinition functionDefaults
         { Global.name       = mkName $ mangle (module_' ++ [name])
         , Global.returnType = compileType $ fst (last type_)
         , Global.parameters = ([Parameter (compileType t) (mkName p) [] | (t, p) <- init type_], False)
-        , basicBlocks       = map (\b -> BasicBlock (b ^. Builder.name) (b ^. stack) (fromJust $ b ^. term)) (Map.elems $ builder ^. blocks)
+        , basicBlocks       = builder ^. blocks
         }
 compileDecl (ImportDecl _)                      = error "internal error: cannot compile an import declaration"
 compileDecl (TypeDecl _ _)                      = error "internal error: cannot compile a type declaration"
 
-compileStmt :: (MonadState FunctionBuilder m, MonadReader Context m) => Stmt -> m ()
+compileStmt :: (MonadReader Context m, MonadState FunctionBuilder m) => Stmt -> m ()
 compileStmt (IfStmt condition trueStmts falseStmts) = do
-    operand <- compileExpr condition
-
-    if_ operand
+    if_ (compileExpr condition)
         (mapM_ compileStmt trueStmts)
         (mapM_ compileStmt falseStmts)
-compileStmt (CallStmt expr)                         = compileExpr_ expr
+compileStmt (CallStmt expr)                         = do
+    invoke (compileExpr_ expr)
 compileStmt (ReturnStmt expr)                       = do
-    operand <- compileExpr expr
-
-    ret operand
+    return_ (compileExpr expr)
 compileStmt (WhileStmt condition stmts)             = do
     while (compileExpr condition)
         (mapM_ compileStmt stmts)
 
-compileExpr :: (MonadState FunctionBuilder m, MonadReader Context m) => Expr -> m Operand
+compileExpr :: (MonadReader Context m, MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Expr -> m Operand
 compileExpr (TypedExpr type_ (BinaryExpr op lhs rhs)) = do
     lhsOperand <- compileExpr lhs
     rhsOperand <- compileExpr rhs
@@ -157,7 +155,7 @@ compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant 
 compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (mkName name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
 
-compileExpr_ :: (MonadState FunctionBuilder m, MonadReader Context m) => Expr -> m ()
+compileExpr_ :: (MonadReader Context m, MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Expr -> m ()
 compileExpr_ = void <$> compileExpr
 
 compileValue :: Value -> Constant

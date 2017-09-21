@@ -15,10 +15,8 @@ Generation utilities for the LLVM compiler, see "Compiler".
 
 module Language.Qux.Llvm.Generator where
 
-import Control.Lens
 import Control.Monad.State
-
-import Data.Maybe
+import Control.Monad.Writer
 
 import LLVM.AST as Llvm
 import LLVM.AST.CallingConvention
@@ -47,53 +45,71 @@ global type_ = constant . GlobalReference type_
 
 -- Control flow
 
-if_ :: MonadState FunctionBuilder m => Operand -> m () -> m () -> m ()
-if_ operand mTrueInstrs mFalseInstrs = do
+if_ :: MonadState FunctionBuilder m => WriterT BlockBuilder m Operand -> WriterT BlockBuilder m () -> WriterT BlockBuilder m () -> m ()
+if_ mCondition mTrueInstrs mFalseInstrs = do
     thenLabel <- freeUnName
     elseLabel <- freeUnName
     exitLabel <- freeUnName
 
-    condBr operand thenLabel elseLabel
+    withCurrentBlock $ do
+        operand <- mCondition
 
-    addBlock thenLabel >> setBlock thenLabel
-    mTrueInstrs
+        condBr operand thenLabel elseLabel
 
-    c <- currentBlock
-    when (isNothing $ c ^. term) $ br exitLabel
+    commitCurrentBlock
 
-    addBlock elseLabel >> setBlock elseLabel
-    mFalseInstrs
+    withNewBlock thenLabel $ do
+        mTrueInstrs
 
-    c <- currentBlock
-    when (isNothing $ c ^. term) $ br exitLabel
+        br exitLabel
 
-    addBlock exitLabel >> setBlock exitLabel
-    unreachable
+    commitCurrentBlock
 
-while :: MonadState FunctionBuilder m => m Operand -> m () -> m ()
+    withNewBlock elseLabel $ do
+        mFalseInstrs
+
+        br exitLabel
+
+    commitCurrentBlock
+
+    createNewBlock exitLabel
+
+invoke :: MonadState FunctionBuilder m => WriterT BlockBuilder m () -> m ()
+invoke mExpr = withCurrentBlock mExpr
+
+return_ :: MonadState FunctionBuilder m => WriterT BlockBuilder m Operand -> m ()
+return_ mExpr = withCurrentBlock $ mExpr >>= ret
+
+while :: MonadState FunctionBuilder m => WriterT BlockBuilder m Operand -> WriterT BlockBuilder m () -> m ()
 while mOperand mInstrs = do
     whileLabel  <- freeUnName
     loopLabel   <- freeUnName
     exitLabel   <- freeUnName
 
-    br whileLabel
+    withCurrentBlock $ do
+        br whileLabel
 
-    addBlock whileLabel >> setBlock whileLabel
-    operand <- mOperand
-    condBr operand loopLabel exitLabel
+    commitCurrentBlock
 
-    addBlock loopLabel >> setBlock loopLabel
-    mInstrs
+    withNewBlock whileLabel $ do
+        operand <- mOperand
 
-    c <- currentBlock
-    when (isNothing $ c ^. term) $ br whileLabel
+        condBr operand loopLabel exitLabel
 
-    addBlock exitLabel >> setBlock exitLabel
-    unreachable
+    commitCurrentBlock
+
+    withNewBlock loopLabel $ do
+        mInstrs
+
+        br whileLabel
+
+    commitCurrentBlock
+
+    createNewBlock exitLabel
 
 -- Instructions
 
-add :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
+add :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> Name -> m ()
 add lhsOperand rhsOperand name = append $ name := Llvm.Add
     { nsw       = False
     , nuw       = False
@@ -102,7 +118,7 @@ add lhsOperand rhsOperand name = append $ name := Llvm.Add
     , metadata  = []
     }
 
-call :: MonadState FunctionBuilder m => Type -> Name -> [Operand] -> Name -> m ()
+call :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Type -> Name -> [Operand] -> Name -> m ()
 call type_ function operands name = append $ name := Call
     { tailCallKind          = Nothing
     , callingConvention     = C
@@ -113,7 +129,7 @@ call type_ function operands name = append $ name := Call
     , metadata              = []
     }
 
-icmp :: MonadState FunctionBuilder m => IntegerPredicate -> Operand -> Operand -> Name -> m ()
+icmp :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => IntegerPredicate -> Operand -> Operand -> Name -> m ()
 icmp predicate lhsOperand rhsOperand name = append $ name := Llvm.ICmp
     { iPredicate    = predicate
     , operand0      = lhsOperand
@@ -121,7 +137,7 @@ icmp predicate lhsOperand rhsOperand name = append $ name := Llvm.ICmp
     , metadata      = []
     }
 
-mul :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
+mul :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> Name -> m ()
 mul lhsOperand rhsOperand name = append $ name := Llvm.Mul
     { nsw       = False
     , nuw       = False
@@ -130,7 +146,7 @@ mul lhsOperand rhsOperand name = append $ name := Llvm.Mul
     , metadata  = []
     }
 
-sdiv :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
+sdiv :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> Name -> m ()
 sdiv lhsOperand rhsOperand name = append $ name := Llvm.SDiv
     { exact     = False
     , operand0  = lhsOperand
@@ -138,14 +154,14 @@ sdiv lhsOperand rhsOperand name = append $ name := Llvm.SDiv
     , metadata  = []
     }
 
-srem :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
+srem :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> Name -> m ()
 srem lhsOperand rhsOperand name = append $ name := Llvm.SRem
     { operand0 = lhsOperand
     , operand1 = rhsOperand
     , metadata = []
     }
 
-sub :: MonadState FunctionBuilder m => Operand -> Operand -> Name -> m ()
+sub :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> Name -> m ()
 sub lhsOperand rhsOperand name = append $ name := Llvm.Sub
     { nsw       = False
     , nuw       = False
@@ -156,13 +172,13 @@ sub lhsOperand rhsOperand name = append $ name := Llvm.Sub
 
 -- Terminators
 
-br :: MonadState FunctionBuilder m => Name -> m ()
+br :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Name -> m ()
 br label = terminate $ Do Br
     { dest      = label
     , metadata' = []
     }
 
-condBr :: MonadState FunctionBuilder m => Operand -> Name -> Name -> m ()
+condBr :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Name -> Name -> m ()
 condBr operand trueLabel falseLabel = terminate $ Do CondBr
     { condition = operand
     , trueDest  = trueLabel
@@ -170,13 +186,13 @@ condBr operand trueLabel falseLabel = terminate $ Do CondBr
     , metadata' = []
     }
 
-ret :: MonadState FunctionBuilder m => Operand -> m ()
+ret :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> m ()
 ret operand = terminate $ Do Ret
     { returnOperand = Just operand
     , metadata'     = []
     }
 
-unreachable :: MonadState FunctionBuilder m => m ()
+unreachable :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => m ()
 unreachable = terminate $ Do Unreachable { metadata' = [] }
 
 -- Constants
