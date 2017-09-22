@@ -1,0 +1,8 @@
+module helloWorld
+
+external print :: Str -> Int
+
+main :: Int:
+    print "Hello World!"
+
+    return 0
