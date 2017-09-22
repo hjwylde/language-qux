@@ -151,6 +151,27 @@ compileExpr (TypedExpr type_ (UnaryExpr op expr))           = do
         Neg -> mul operand (constant $ int (-1)) name
 
     return $ local (compileType type_) name
+compileExpr (TypedExpr type_ (ValueExpr (StrValue s)))      = do
+    let nullTerminatedStr = s ++ "\0"
+    let strLength = length nullTerminatedStr
+
+    let strArrayType = arrayType charType (fromIntegral $ strLength)
+    let lengthOperand = constant . int $ fromIntegral strLength
+
+    name <- freeUnName
+    alloca strArrayType (Just lengthOperand) name
+
+    let valueOperand = constant $ str nullTerminatedStr
+    let strPtrArrayType = ptrType strArrayType
+
+    store valueOperand (local strPtrArrayType name)
+
+    let strPtrType = compileType type_
+
+    name' <- freeUnName
+    bitcast (local strPtrArrayType name) strPtrType name'
+
+    return $ local strPtrType name'
 compileExpr (TypedExpr _ (ValueExpr value))                 = return $ constant (compileValue value)
 compileExpr (TypedExpr type_ (VariableExpr name))           = return $ local (compileType type_) (mkName name)
 compileExpr _                                               = error "internal error: cannot compile a non-typed expression (try applying type resolution)"
@@ -163,7 +184,7 @@ compileValue (BoolValue True)   = true
 compileValue (BoolValue False)  = false
 compileValue (IntValue i)       = int i
 compileValue NilValue           = nil
-compileValue (StrValue s)       = str s
+compileValue (StrValue _)       = error "internal error: cannot compile a string as a constant"
 
 compileType :: Qux.Type -> Llvm.Type
 compileType AnyType     = error "internal error: cannot compile an any type"

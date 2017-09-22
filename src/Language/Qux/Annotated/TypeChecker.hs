@@ -85,8 +85,9 @@ checkStmt (Ann.IfStmt _ condition trueStmts falseStmts) = do
 
     checkBlock trueStmts
     checkBlock falseStmts
-checkStmt (Ann.CallStmt _ expr)                         = do
-    expectExpr_ expr [NilType]
+checkStmt (Ann.CallStmt _ _)                            = return ()
+    -- TODO (hjw): temporarily commented out
+    --expectExpr_ expr [NilType]
 checkStmt (Ann.ReturnStmt _ expr)                       = do
     expected <- gets (Map.! "@")
 

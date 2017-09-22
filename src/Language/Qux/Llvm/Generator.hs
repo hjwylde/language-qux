@@ -18,12 +18,15 @@ module Language.Qux.Llvm.Generator where
 import Control.Monad.State
 import Control.Monad.Writer
 
+import Data.Char
+
 import LLVM.AST as Llvm
 import LLVM.AST.CallingConvention
-import LLVM.AST.Constant as Constant hiding (exact, nsw, nuw, operand0, operand1, iPredicate)
+import LLVM.AST.Constant as Constant hiding (address, exact, indices, inBounds, iPredicate, nsw, nuw, operand0, operand1, type')
 import LLVM.AST.Type as Type
+import LLVM.AST.AddrSpace
 import LLVM.AST.IntegerPredicate
-import LLVM.AST.Global           as Global hiding (callingConvention, functionAttributes, returnAttributes)
+import LLVM.AST.Global           as Global hiding (alignment, callingConvention, functionAttributes, returnAttributes, type')
 
 import Language.Qux.Llvm.Builder
 
@@ -123,6 +126,21 @@ add lhsOperand rhsOperand name = append $ name := Llvm.Add
     , metadata  = []
     }
 
+alloca :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Type -> Maybe Operand -> Name -> m ()
+alloca type_ mNumElements name = append $ name := Llvm.Alloca
+    { allocatedType = type_
+    , numElements   = mNumElements
+    , alignment     = 0
+    , metadata      = []
+    }
+
+bitcast :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Type -> Name -> m ()
+bitcast operand type_ name = append $ name := Llvm.BitCast
+    { operand0  = operand
+    , type'     = type_
+    , metadata  = []
+    }
+
 call :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Type -> Name -> [Operand] -> Name -> m ()
 call type_ function operands name = append $ name := Call
     { tailCallKind          = Nothing
@@ -166,6 +184,19 @@ srem lhsOperand rhsOperand name = append $ name := Llvm.SRem
     , metadata = []
     }
 
+store :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> m ()
+store valueOperand addressOperand = do
+    unused <- freeUnName
+
+    append $ unused := Llvm.Store
+        { volatile          = False
+        , address           = addressOperand
+        , value             = valueOperand
+        , maybeAtomicity    = Nothing
+        , alignment         = 0
+        , metadata          = []
+        }
+
 sub :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> Operand -> Name -> m ()
 sub lhsOperand rhsOperand name = append $ name := Llvm.Sub
     { nsw       = False
@@ -202,10 +233,10 @@ unreachable = terminate $ Do Unreachable { metadata' = [] }
 
 -- Constants
 
-true :: Constant
-true = Int
-    { integerBits   = 1
-    , integerValue  = 1
+char :: Char -> Constant
+char c = Int
+    { integerBits   = 8
+    , integerValue  = toInteger $ ord c
     }
 
 false :: Constant
@@ -228,12 +259,30 @@ nil = Struct
     }
 
 str :: String -> Constant
-str _ = undefined
+str s = Array
+    { memberType    = charType
+    , memberValues  = map char s
+    }
+
+true :: Constant
+true = Int
+    { integerBits   = 1
+    , integerValue  = 1
+    }
 
 -- Types
 
+arrayType :: Type -> Integer -> Type
+arrayType type_ numElements = ArrayType
+    { nArrayElements    = fromIntegral numElements
+    , elementType       = type_
+    }
+
 boolType :: Type
 boolType = i1
+
+charType :: Type
+charType = i8
 
 intType :: Type
 intType = i32
@@ -244,5 +293,11 @@ nilType = StructureType
     , elementTypes  = []
     }
 
+ptrType :: Type -> Type
+ptrType type_ = PointerType
+    { pointerReferent   = type_
+    , pointerAddrSpace  = AddrSpace 0
+    }
+
 strType :: Type
-strType = undefined
+strType = ptrType i8
