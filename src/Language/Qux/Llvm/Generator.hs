@@ -85,7 +85,7 @@ if_ mCondition mTrueInstrs mFalseInstrs = do
 invoke :: MonadState FunctionBuilder m => WriterT BlockBuilder m () -> m ()
 invoke mExpr = withCurrentBlock mExpr
 
-return_ :: MonadState FunctionBuilder m => WriterT BlockBuilder m Operand -> m ()
+return_ :: MonadState FunctionBuilder m => WriterT BlockBuilder m (Maybe Operand) -> m ()
 return_ mExpr = withCurrentBlock $ mExpr >>= ret
 
 while :: MonadState FunctionBuilder m => WriterT BlockBuilder m Operand -> WriterT BlockBuilder m () -> m ()
@@ -222,9 +222,9 @@ condBr operand trueLabel falseLabel = terminate $ Do CondBr
     , metadata' = []
     }
 
-ret :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Operand -> m ()
-ret operand = terminate $ Do Ret
-    { returnOperand = Just operand
+ret :: (MonadState FunctionBuilder m, MonadWriter BlockBuilder m) => Maybe Operand -> m ()
+ret mOperand = terminate $ Do Ret
+    { returnOperand = mOperand
     , metadata'     = []
     }
 
@@ -249,13 +249,6 @@ int :: Integer -> Constant
 int i = Int
     { integerBits   = 32
     , integerValue  = i
-    }
-
-nil :: Constant
-nil = Struct
-    { structName        = Nothing
-    , Constant.isPacked = True
-    , memberValues      = []
     }
 
 str :: String -> Constant
@@ -287,12 +280,6 @@ charType = i8
 intType :: Type
 intType = i32
 
-nilType :: Type
-nilType = StructureType
-    { Type.isPacked = True
-    , elementTypes  = []
-    }
-
 ptrType :: Type -> Type
 ptrType type_ = PointerType
     { pointerReferent   = type_
@@ -301,3 +288,6 @@ ptrType type_ = PointerType
 
 strType :: Type
 strType = ptrType i8
+
+voidType :: Type
+voidType = VoidType

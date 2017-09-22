@@ -85,13 +85,16 @@ checkStmt (Ann.IfStmt _ condition trueStmts falseStmts) = do
 
     checkBlock trueStmts
     checkBlock falseStmts
-checkStmt (Ann.CallStmt _ _)                            = return ()
-    -- TODO (hjw): temporarily commented out
-    --expectExpr_ expr [NilType]
-checkStmt (Ann.ReturnStmt _ expr)                       = do
+checkStmt (Ann.CallStmt _ expr)                         = do
+    expectExpr_ expr [VoidType]
+checkStmt (Ann.ReturnStmt ann mExpr)                    = do
     expected <- gets (Map.! "@")
 
-    expectExpr_ expr [expected]
+    case mExpr of
+        Just expr   -> expectExpr_ expr [expected]
+        Nothing     -> lift $ expectType_ voidType [expected]
+    where
+        voidType = attach ann VoidType
 checkStmt (Ann.WhileStmt _ condition stmts)             = do
     expectExpr_ condition [BoolType]
 
@@ -138,6 +141,9 @@ expectType received expects
 
         return $ simp received
 
+expectType_ :: Ann.Type SourcePos -> [Type] -> Check ()
+expectType_ = fmap void . expectType
+
 isSubtype :: Type -> Type -> Bool
 isSubtype _ AnyType     = True
 isSubtype first second  = first == second
@@ -146,5 +152,5 @@ attach :: SourcePos -> Type -> Ann.Type SourcePos
 attach pos AnyType  = Ann.AnyType pos
 attach pos BoolType = Ann.BoolType pos
 attach pos IntType  = Ann.IntType pos
-attach pos NilType  = Ann.NilType pos
 attach pos StrType  = Ann.StrType pos
+attach pos VoidType = Ann.VoidType pos

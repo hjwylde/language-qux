@@ -34,7 +34,7 @@ import Language.Qux.Llvm.Builder   as Builder
 import Language.Qux.Llvm.Generator
 import Language.Qux.Syntax         as Qux
 
-import LLVM.AST                  as Llvm hiding (function)
+import LLVM.AST                  as Llvm hiding (VoidType, function)
 import LLVM.AST.Constant         as Constant hiding (exact, nsw, nuw, operand0, operand1)
 import LLVM.AST.Global           as Global
 import LLVM.AST.IntegerPredicate
@@ -107,8 +107,8 @@ compileStmt (IfStmt condition trueStmts falseStmts) = do
         (mapM_ compileStmt falseStmts)
 compileStmt (CallStmt expr)                         = do
     invoke (compileExpr_ expr)
-compileStmt (ReturnStmt expr)                       = do
-    return_ (compileExpr expr)
+compileStmt (ReturnStmt mExpr)                      = do
+    return_ (mapM compileExpr mExpr)
 compileStmt (WhileStmt condition stmts)             = do
     while (compileExpr condition)
         (mapM_ compileStmt stmts)
@@ -183,12 +183,11 @@ compileValue :: Value -> Constant
 compileValue (BoolValue True)   = true
 compileValue (BoolValue False)  = false
 compileValue (IntValue i)       = int i
-compileValue NilValue           = nil
 compileValue (StrValue _)       = error "internal error: cannot compile a string as a constant"
 
 compileType :: Qux.Type -> Llvm.Type
 compileType AnyType     = error "internal error: cannot compile an any type"
 compileType BoolType    = boolType
 compileType IntType     = intType
-compileType NilType     = nilType
 compileType StrType     = strType
+compileType VoidType    = voidType

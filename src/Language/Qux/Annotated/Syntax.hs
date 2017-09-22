@@ -131,7 +131,7 @@ instance Pretty (Attribute a) where
 -- | A statement.
 data Stmt a = IfStmt a (Expr a) [Stmt a] [Stmt a]   -- ^ A condition, true block and false block of statements.
             | CallStmt a (Expr a)                   -- ^ A call statement.
-            | ReturnStmt a (Expr a)                 -- ^ An expression.
+            | ReturnStmt a (Maybe (Expr a))         -- ^ An expression.
             | WhileStmt a (Expr a) [Stmt a]         -- ^ A condition and block of statements.
     deriving (Functor, Show)
 
@@ -147,7 +147,7 @@ instance Eq (Stmt a) where
 instance Simplifiable (Stmt a) Simp.Stmt where
     simp (IfStmt _ condition trueStmts falseStmts)  = Simp.IfStmt (simp condition) (map simp trueStmts) (map simp falseStmts)
     simp (CallStmt _ expr)                          = Simp.CallStmt (simp expr)
-    simp (ReturnStmt _ expr)                        = Simp.ReturnStmt (simp expr)
+    simp (ReturnStmt _ mExpr)                       = Simp.ReturnStmt (simp <$> mExpr)
     simp (WhileStmt _ condition stmts)              = Simp.WhileStmt (simp condition) (map simp stmts)
 
 instance Pretty (Stmt a) where
@@ -194,16 +194,16 @@ instance Pretty (Expr a) where
 data Type a = AnyType a
             | BoolType a
             | IntType a
-            | NilType a
             | StrType a
+            | VoidType a
     deriving (Functor, Show)
 
 instance Annotated Type where
     ann (AnyType a)     = a
     ann (BoolType a)    = a
     ann (IntType a)     = a
-    ann (NilType a)     = a
     ann (StrType a)     = a
+    ann (VoidType a)    = a
 
 instance Eq (Type a) where
     (==) = (==) `on` simp
@@ -212,8 +212,8 @@ instance Simplifiable (Type a) Simp.Type where
     simp (AnyType _)    = Simp.AnyType
     simp (BoolType _)   = Simp.BoolType
     simp (IntType _)    = Simp.IntType
-    simp (NilType _)    = Simp.NilType
     simp (StrType _)    = Simp.StrType
+    simp (VoidType _)   = Simp.VoidType
 
 instance Pretty (Type a) where
     pPrint = pPrint . simp

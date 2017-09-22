@@ -72,7 +72,7 @@ instance Pretty Attribute where
 -- | A statement.
 data Stmt   = IfStmt Expr [Stmt] [Stmt] -- ^ A condition, true block and false block of statements.
             | CallStmt Expr             -- ^ A call statement.
-            | ReturnStmt Expr           -- ^ An expression.
+            | ReturnStmt (Maybe Expr)   -- ^ An expression.
             | WhileStmt Expr [Stmt]     -- ^ A condition and block of statements.
     deriving (Eq, Show)
 
@@ -80,11 +80,16 @@ instance Pretty Stmt where
     pPrint (IfStmt condition trueStmts falseStmts)  = vcat
         [ text "if" <+> pPrint condition <> colon
         , block trueStmts
-        , if null falseStmts then empty else text "else" <> colon
+        , if null falseStmts
+            then empty
+            else text "else" <> colon
         , block falseStmts
         ]
     pPrint (CallStmt expr)                          = pPrint expr
-    pPrint (ReturnStmt expr)                        = text "return" <+> pPrint expr
+    pPrint (ReturnStmt mExpr)                       = hsep
+        [ text "return"
+        , maybe empty pPrint mExpr
+        ]
     pPrint (WhileStmt condition stmts)              = vcat
         [ text "while" <+> pPrint condition <> colon
         , block stmts
@@ -149,30 +154,28 @@ instance Pretty UnaryOp where
 -- | A value is considered to be in it's normal form.
 data Value  = BoolValue Bool    -- ^ A boolean.
             | IntValue Integer  -- ^ An unbounded integer.
-            | NilValue          -- ^ A unit value.
             | StrValue String   -- ^ A string.
     deriving (Eq, Show)
 
 instance Pretty Value where
     pPrint (BoolValue bool) = text $ lower (show bool)
     pPrint (IntValue int)   = text $ show int
-    pPrint NilValue         = text "nil"
     pPrint (StrValue str)   = doubleQuotes $ text str
 
 -- | A type.
 data Type   = AnyType
             | BoolType
             | IntType
-            | NilType
             | StrType
+            | VoidType
     deriving (Eq, Show)
 
 instance Pretty Type where
     pPrint AnyType  = text "Any"
     pPrint BoolType = text "Bool"
     pPrint IntType  = text "Int"
-    pPrint NilType  = text "Nil"
     pPrint StrType  = text "Str"
+    pPrint VoidType = text "Void"
 
 -- | Qualifies the identifier into a single 'Id' joined with periods.
 qualify :: [Id] -> Id

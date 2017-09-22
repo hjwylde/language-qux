@@ -19,7 +19,7 @@ module Language.Qux.Annotated.Parser (
     sourceName, sourceLine, sourceColumn,
 
     -- * Parsers
-    id_, typeId, program, decl, attribute, stmt, expr, value, type_,
+    id_, typeId, program, decl, attribute, stmt, expr, value, type_, returnType,
 ) where
 
 import Control.Monad.Trans.Except
@@ -85,7 +85,7 @@ decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
             name <- id_
             dcolon
             parameterTypes <- withPos $ try (fmap (,) type_ <+/> return (Id pos "_")) `endBy` rarrow
-            returnType <- type_
+            returnType <- returnType
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) []
 
@@ -93,7 +93,7 @@ decl = choice [functionOrTypeDecl, importDecl] <?> "declaration"
             name <- id_
             dcolon
             parameterTypes <- withPos $ try (fmap (,) type_ <+/> id_) `endBy` rarrow
-            returnType <- type_
+            returnType <- returnType
             stmts <- colon >> indented >> block stmt
 
             return $ FunctionDecl pos attrs name (parameterTypes ++ [(returnType, Id pos "@")]) stmts
@@ -132,7 +132,7 @@ stmt = choice [ifStmt, callStmt, returnStmt, whileStmt] <?> "statement"
 
             return $ IfStmt pos condition trueStmts falseStmts
         callStmt    = CallStmt <$> getPosition <*> application
-        returnStmt  = ReturnStmt <$> getPosition <* keyword "return" <*> expr
+        returnStmt  = ReturnStmt <$> getPosition <* keyword "return" <*> optionMaybe expr
         whileStmt   = do
             pos <- getPosition
 
@@ -186,16 +186,21 @@ value = choice
     [ BoolValue False <$  keyword "false"
     , BoolValue True  <$  keyword "true"
     , IntValue        <$> natural
-    , NilValue        <$  keyword "nil"
     , StrValue        <$> string
     ] <?> "value"
 
 -- | 'Type' parser.
 type_ :: Parser (Type SourcePos)
 type_ = getPosition >>= \pos -> choice
-    [ AnyType pos <$  keyword "Any"
+    [ AnyType pos  <$ keyword "Any"
     , BoolType pos <$ keyword "Bool"
-    , IntType  pos <$ keyword "Int"
-    , NilType  pos <$ keyword "Nil"
-    , StrType pos <$  keyword "Str"
+    , IntType pos  <$ keyword "Int"
+    , StrType pos  <$ keyword "Str"
     ] <?> "type"
+
+-- | 'Type' parser. This parser includes the possible return type of 'Void'.
+returnType :: Parser (Type SourcePos)
+returnType = getPosition >>= \pos -> choice
+    [ type_
+    , VoidType pos <$ keyword "Void"
+    ] <?> "return type"

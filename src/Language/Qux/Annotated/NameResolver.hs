@@ -111,10 +111,10 @@ resolveStmt (Ann.CallStmt pos expr)                         = do
     expr' <- resolveExpr expr
 
     return $ Ann.CallStmt pos expr'
-resolveStmt (Ann.ReturnStmt pos expr)                       = do
-    expr' <- resolveExpr expr
+resolveStmt (Ann.ReturnStmt pos mExpr)                      = do
+    mExpr' <- mapM resolveExpr mExpr
 
-    return $ Ann.ReturnStmt pos expr'
+    return $ Ann.ReturnStmt pos mExpr'
 resolveStmt (Ann.WhileStmt pos condition stmts)             = do
     condition'  <- resolveExpr condition
     stmts'      <- resolveBlock stmts

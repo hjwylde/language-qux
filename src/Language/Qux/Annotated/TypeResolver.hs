@@ -83,10 +83,10 @@ resolveStmt (Ann.CallStmt pos expr)                         = do
     expr' <- resolveExpr expr
 
     return $ Ann.CallStmt pos expr'
-resolveStmt (Ann.ReturnStmt pos expr)                       = do
-    expr' <- resolveExpr expr
+resolveStmt (Ann.ReturnStmt pos mExpr)                      = do
+    mExpr' <- mapM resolveExpr mExpr
 
-    return $ Ann.ReturnStmt pos expr'
+    return $ Ann.ReturnStmt pos mExpr'
 resolveStmt (Ann.WhileStmt pos condition stmts)             = do
     condition'  <- resolveExpr condition
     stmts'      <- resolveBlock stmts
@@ -132,7 +132,6 @@ resolveExpr e@(Ann.VariableExpr pos name)   = gets (fromJust . Map.lookup (simp 
 resolveValue :: Value -> Type
 resolveValue (BoolValue _)  = BoolType
 resolveValue (IntValue _)   = IntType
-resolveValue NilValue       = NilType
 resolveValue (StrValue _)   = StrType
 
 -- | Extracts the type from a 'Ann.TypedExpr'.

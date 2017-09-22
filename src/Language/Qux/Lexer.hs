@@ -42,8 +42,8 @@ keywords =
     [ "_"
     , "external", "import", "module", "type"
     , "else", "if", "return", "while"
-    , "false", "nil", "true"
-    , "Any", "Bool", "Int", "Nil", "Str"
+    , "false", "true"
+    , "Any", "Bool", "Int", "Str", "Void"
     ]
 
 operators :: [String]
