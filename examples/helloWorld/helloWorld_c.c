@@ -1,5 +1,5 @@
 #include<stdio.h>
 
-void helloWorld_print(char * str) {
+void helloWorld_println(char * str) {
     printf("%s\n", str);
 }

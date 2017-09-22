@@ -1,6 +1,6 @@
 module helloWorld
 
-external print :: Str -> Void
+external println :: Str -> Void
 
 main :: Int:
     print "Hello World!"
