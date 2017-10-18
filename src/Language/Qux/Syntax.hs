@@ -175,7 +175,7 @@ instance Pretty Type where
     pPrint BoolType = text "Bool"
     pPrint IntType  = text "Int"
     pPrint StrType  = text "Str"
-    pPrint VoidType = text "Void"
+    pPrint VoidType = text "()"
 
 -- | Qualifies the identifier into a single 'Id' joined with periods.
 qualify :: [Id] -> Id

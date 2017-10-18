@@ -202,5 +202,5 @@ type_ = getPosition >>= \pos -> choice
 returnType :: Parser (Type SourcePos)
 returnType = getPosition >>= \pos -> choice
     [ type_
-    , VoidType pos <$ keyword "Void"
+    , VoidType pos <$ keyword "()"
     ] <?> "return type"

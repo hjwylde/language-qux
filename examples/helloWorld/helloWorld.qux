@@ -1,8 +1,8 @@
 module helloWorld
 
-external println :: Str -> Void
+external println :: Str -> ()
 
 main :: Int:
-    print "Hello World!"
+    println "Hello World!"
 
     return 0

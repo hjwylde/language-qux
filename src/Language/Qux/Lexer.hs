@@ -39,11 +39,11 @@ quxDef = Token.LanguageDef commentStart commentEnd commentLine nestedComments id
 
 keywords :: [String]
 keywords =
-    [ "_"
+    [ "_", "()"
     , "external", "import", "module", "type"
     , "else", "if", "return", "while"
     , "false", "true"
-    , "Any", "Bool", "Int", "Str", "Void"
+    , "Any", "Bool", "Int", "Str"
     ]
 
 operators :: [String]
