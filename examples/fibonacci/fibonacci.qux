@@ -1,7 +1,11 @@
 module fibonacci
 
+import fmt
+
 main :: Int:
-    return fib 5
+    println (itos (fib 5))
+
+    return 0
 
 fib :: Int n -> Int:
     if n <= 2:

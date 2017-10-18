@@ -1,7 +1,11 @@
 module factorial
 
+import fmt
+
 main :: Int:
-    return fact 5
+    println (itos (fact 5))
+
+    return 0
 
 fact :: Int i -> Int:
     if i <= 1:

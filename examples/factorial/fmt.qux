@@ -1,0 +1,5 @@
+module fmt
+
+external itos :: Int -> Str
+
+external println :: Str -> ()

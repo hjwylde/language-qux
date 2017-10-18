@@ -1,7 +1,12 @@
 module gcd
 
+import fmt
+
 main :: Int:
-    return gcd 14 21
+    println (itos (gcd 14 21))
+    println (itos (gcd2 27 72))
+
+    return 0
 
 gcd :: Int a -> Int b -> Int:
     if a == b:

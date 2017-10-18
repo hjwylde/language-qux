@@ -1,6 +1,6 @@
 module helloWorld
 
-external println :: Str -> ()
+import fmt
 
 main :: Int:
     println "Hello World!"
